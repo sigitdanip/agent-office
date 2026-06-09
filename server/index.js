@@ -13,18 +13,18 @@ const REMOTE_BACKEND = process.env.REMOTE_BACKEND || null;
 
 // Profiles — team roster
 const PROFILES = [
-  { id: 'ai-engineer',  name: 'AI Engineer',    model: 'deepseek-v4-pro',   icon: '🤖' },
-  { id: 'api-dev',      name: 'API Dev',         model: 'deepseek-v4-pro',   icon: '🔌' },
-  { id: 'bash-dev',     name: 'Bash Dev',        model: 'deepseek-v4-flash', icon: '🐚' },
-  { id: 'c-cpp-dev',    name: 'C/C++ Dev',       model: 'deepseek-v4-pro',   icon: '⚙️' },
-  { id: 'data-dev',     name: 'Data Dev',        model: 'deepseek-v4-flash', icon: '📊' },
-  { id: 'explorer',     name: 'Explorer',        model: 'deepseek-v4-flash', icon: '🔍' },
-  { id: 'frontend-dev', name: 'Frontend Dev',    model: 'deepseek-v4-pro',   icon: '🎨' },
-  { id: 'infra-dev',    name: 'Infra Dev',       model: 'deepseek-v4-flash', icon: '🏗️' },
-  { id: 'python-dev',   name: 'Python Dev',      model: 'deepseek-v4-pro',   icon: '🐍' },
-  { id: 'qa-engineer',  name: 'QA Engineer',     model: 'deepseek-v4-pro',   icon: '🧪' },
-  { id: 'researcher',   name: 'Researcher',      model: 'kimi-k2.5',         icon: '📝' },
-  { id: 'workflow-dev', name: 'Workflow Dev',    model: 'deepseek-v4-flash', icon: '🔗' },
+  { id: 'ai-engineer',  name: 'AI Engineer',    model: 'deepseek-v4-pro',   icon: 'AI' },
+  { id: 'api-dev',      name: 'API Dev',         model: 'deepseek-v4-pro',   icon: 'API' },
+  { id: 'bash-dev',     name: 'Bash Dev',        model: 'deepseek-v4-flash', icon: 'SH' },
+  { id: 'c-cpp-dev',    name: 'C/C++ Dev',       model: 'deepseek-v4-pro',   icon: 'CPP' },
+  { id: 'data-dev',     name: 'Data Dev',        model: 'deepseek-v4-flash', icon: 'DT' },
+  { id: 'explorer',     name: 'Explorer',        model: 'deepseek-v4-flash', icon: 'EXP' },
+  { id: 'frontend-dev', name: 'Frontend Dev',    model: 'deepseek-v4-pro',   icon: 'FE' },
+  { id: 'infra-dev',    name: 'Infra Dev',       model: 'deepseek-v4-flash', icon: 'INF' },
+  { id: 'python-dev',   name: 'Python Dev',      model: 'deepseek-v4-pro',   icon: 'PY' },
+  { id: 'qa-engineer',  name: 'QA Engineer',     model: 'deepseek-v4-pro',   icon: 'QA' },
+  { id: 'researcher',   name: 'Researcher',      model: 'kimi-k2.5',         icon: 'RCH' },
+  { id: 'workflow-dev', name: 'Workflow Dev',    model: 'deepseek-v4-flash', icon: 'WF' },
 ];
 
 // ==============================
