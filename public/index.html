@@ -183,6 +183,7 @@
   .status-done { background: rgba(74,106,102,0.1); color: var(--gray); }
   .status-ready, .status-todo { background: rgba(116,185,255,0.12); color: var(--blue); }
   .status-brainstorm { background: rgba(155,89,182,0.12); color: #bb8fce; }
+  .status-parking-lot { background: rgba(74,106,102,0.08); color: var(--gray); }
 
   /* KANBAN */
   .kanban-board {
@@ -230,19 +231,27 @@
     flex-shrink: 0;
   }
   .kanban-col:first-child .kanban-col-header {
+    background: rgba(74,106,102,0.08);
+    color: var(--gray);
+    border-bottom-color: rgba(74,106,102,0.2);
+  }
+  .kanban-col:first-child {
+    border-color: rgba(74,106,102,0.15);
+  }
+  .kanban-col:nth-child(2) .kanban-col-header {
     background: rgba(155,89,182,0.08);
     color: #bb8fce;
     border-bottom-color: rgba(155,89,182,0.3);
   }
-  .kanban-col:first-child {
+  .kanban-col:nth-child(2) {
     border-color: rgba(155,89,182,0.2);
   }
-  .kanban-col:nth-child(2) .kanban-col-header {
+  .kanban-col:nth-child(3) .kanban-col-header {
     background: rgba(253,203,110,0.08);
     color: var(--yellow);
     border-bottom-color: rgba(253,203,110,0.3);
   }
-  .kanban-col:nth-child(2) {
+  .kanban-col:nth-child(3) {
     border-color: rgba(253,203,110,0.2);
   }
   .kanban-col-count {
@@ -640,8 +649,8 @@ function connect(){
 }
 function applyDelta(d){state.teams=d}
 
-const COLUMNS=['brainstorm','triage','todo','ready','running','blocked','done'];
-const COLS={brainstorm:'Brainstorm',triage:'Triage',todo:'Todo',ready:'Ready',running:'Running',blocked:'Blocked',done:'Done'};
+const COLUMNS=['parking-lot','brainstorm','triage','todo','ready','running','blocked','done'];
+const COLS={'parking-lot':'Parking Lot',brainstorm:'Brainstorm',triage:'Triage',todo:'Todo',ready:'Ready',running:'Running',blocked:'Blocked',done:'Done'};
 
 function render(){renderRoster();renderKanban();renderActivity();renderStandup();renderChat()}
 
@@ -652,7 +661,7 @@ function renderRoster(){
   el.innerHTML=profiles.map(p=>`<div class="profile-row">
     <div class="profile-badge">${badge(p.id)}</div>
     <div class="profile-info"><div class="profile-name">${esc(p.name)}</div><div class="profile-model">${esc(p.model)}</div></div>
-    <span class="profile-status status-${p.status||'idle'}">${({running:'Run',blocked:'Blk',idle:'Idle',done:'Done',ready:'Rdy',todo:'Todo',triage:'Trg',brainstorm:'Brm'})[p.status]||p.status}</span>
+    <span class="profile-status status-${p.status||'idle'}">${({running:'Run',blocked:'Blk',idle:'Idle',done:'Done',ready:'Rdy',todo:'Todo',triage:'Trg',brainstorm:'Brm','parking-lot':'Prk'})[p.status]||p.status}</span>
   </div>`).join('')
 }
 
@@ -690,7 +699,8 @@ function renderActivity(){
 function renderStandup(){
   const el=document.getElementById('standup-body'),s=current().standup;
   if(!s||!s.byStatus){el.innerHTML='<div class="empty-state">No data</div>';return}
-  let html=`<div class="stat-row"><span class="stat-label">Queued</span><span class="stat-value">${(s.byStatus.brainstorm||0)+(s.byStatus.triage||0)+(s.byStatus.todo||0)+(s.byStatus.ready||0)}</span></div>
+  let html=`<div class="stat-row"><span class="stat-label">Parked</span><span class="stat-value">${s.byStatus['parking-lot']||0}</span></div>
+    <div class="stat-row"><span class="stat-label">Queued</span><span class="stat-value">${(s.byStatus.brainstorm||0)+(s.byStatus.triage||0)+(s.byStatus.todo||0)+(s.byStatus.ready||0)}</span></div>
     <div class="stat-row"><span class="stat-label">Running</span><span class="stat-value run">${s.byStatus.running||0}</span></div>
     <div class="stat-row"><span class="stat-label">Blocked</span><span class="stat-value blk">${s.byStatus.blocked||0}</span></div>
     <div class="stat-row"><span class="stat-label">Done</span><span class="stat-value done">${s.byStatus.done||0}</span></div>`;
