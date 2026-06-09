@@ -1,18 +1,17 @@
 #!/usr/bin/env node
-// Agent Office server — reads Hermes kanban DB, serves REST + WebSocket
+// Agent Office server
+// VPS mode: reads kanban DB directly, serves REST + WebSocket
+// Remote mode: serves static files, frontend connects to VPS backend
 
 const express = require('express');
 const http = require('http');
-const { WebSocketServer } = require('ws');
 const path = require('path');
 const fs = require('fs');
 
-// ---- Config ----
 const PORT = process.env.PORT || 3000;
-const POLL_INTERVAL = parseInt(process.env.POLL_INTERVAL || '2000', 10);
-const KANBAN_DB = process.env.KANBAN_DB || path.join(process.env.HOME || '/root', '.hermes', 'kanban.db');
+const REMOTE_BACKEND = process.env.REMOTE_BACKEND || null;
 
-// ---- Profiles (hardcoded from current team setup) ----
+// Profiles — team roster
 const PROFILES = [
   { id: 'ai-engineer',  name: 'AI Engineer',    model: 'deepseek-v4-pro',   icon: '🤖' },
   { id: 'api-dev',      name: 'API Dev',         model: 'deepseek-v4-pro',   icon: '🔌' },
@@ -28,85 +27,73 @@ const PROFILES = [
   { id: 'workflow-dev', name: 'Workflow Dev',    model: 'deepseek-v4-flash', icon: '🔗' },
 ];
 
-// ---- SQLite helpers ----
+// ==============================
+// REMOTE MODE — no native deps needed
+// ==============================
+if (REMOTE_BACKEND) {
+  console.log(`[agent-office] Remote mode → frontend connects to ${REMOTE_BACKEND}`);
+
+  const app = express();
+  const server = http.createServer(app);
+
+  // Serve static files with backend URL injected
+  app.use(express.static(path.join(__dirname, '..', 'public')));
+
+  app.get('/', (req, res) => {
+    let html = fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf-8');
+    const wsUrl = REMOTE_BACKEND.replace(/^http/, 'ws');
+    html = html.replace('__BACKEND_WS__', wsUrl);
+    res.send(html);
+  });
+
+  server.listen(PORT, () => {
+    console.log(`[agent-office] Remote client at http://localhost:${PORT}`);
+    console.log(`[agent-office] WebSocket → ws://${REMOTE_BACKEND.replace(/^http:\/\//, '')}`);
+  });
+
+  process.on('SIGINT', () => process.exit(0));
+  process.on('SIGTERM', () => process.exit(0));
+  return;
+}
+
+// ==============================
+// VPS STANDALONE MODE
+// ==============================
+const { WebSocketServer } = require('ws');
+const Database = require('better-sqlite3');
+
+const POLL_INTERVAL = parseInt(process.env.POLL_INTERVAL || '2000', 10);
+const KANBAN_DB = process.env.KANBAN_DB || path.join(process.env.HOME || '/root', '.hermes', 'kanban.db');
+
 let db = null;
 function openDb() {
   try {
     if (fs.existsSync(KANBAN_DB)) {
-      const Database = require('better-sqlite3');
       db = new Database(KANBAN_DB, { readonly: true, fileMustExist: true });
       console.log(`[agent-office] Connected to kanban DB: ${KANBAN_DB}`);
       return true;
     }
-    console.error(`[agent-office] Kanban DB not found at: ${KANBAN_DB}`);
+    console.warn(`[agent-office] Kanban DB not found at ${KANBAN_DB}`);
     return false;
   } catch (e) {
-    console.error(`[agent-office] Failed to open kanban DB: ${e.message}`);
+    console.error(`[agent-office] DB error: ${e.message}`);
     return false;
   }
 }
 
-function queryTasks() {
+function q(sql, params = []) {
   if (!db) return [];
-  try {
-    return db.prepare(`
-      SELECT id, title, body, assignee, status, priority, tenant,
-             created_at, started_at, completed_at, result
-      FROM tasks ORDER BY created_at DESC LIMIT 200
-    `).all();
-  } catch (e) { return []; }
+  try { return db.prepare(sql).all(...params); }
+  catch (e) { return []; }
 }
 
-function queryEvents(sinceId = 0) {
-  if (!db) return { events: [], maxId: 0 };
-  try {
-    const events = db.prepare(`
-      SELECT id, task_id, kind, payload, created_at
-      FROM task_events WHERE id > ? ORDER BY id ASC LIMIT 500
-    `).all(sinceId);
-    const maxId = events.length > 0 ? events[events.length - 1].id : sinceId;
-    return { events, maxId };
-  } catch (e) { return { events: [], maxId: sinceId }; }
-}
-
-function queryComments(sinceId = 0) {
-  if (!db) return { comments: [], maxId: 0 };
-  try {
-    const comments = db.prepare(`
-      SELECT id, task_id, author, body, created_at
-      FROM task_comments WHERE id > ? ORDER BY id ASC LIMIT 200
-    `).all(sinceId);
-    const maxId = comments.length > 0 ? comments[comments.length - 1].id : sinceId;
-    return { comments, maxId };
-  } catch (e) { return { comments: [], maxId: sinceId }; }
-}
-
-function queryRuns() {
-  if (!db) return [];
-  try {
-    return db.prepare(`
-      SELECT id, task_id, profile, status, started_at, ended_at, outcome, summary, metadata
-      FROM task_runs ORDER BY started_at DESC LIMIT 100
-    `).all();
-  } catch (e) { return []; }
-}
-
-function queryTaskLinks() {
-  if (!db) return [];
-  try {
-    return db.prepare(`SELECT parent_id, child_id FROM task_links`).all();
-  } catch (e) { return []; }
-}
-
-// ---- Build snapshot ----
 function buildSnapshot() {
-  const tasks = queryTasks();
-  const { events } = queryEvents(0);
-  const { comments } = queryComments(0);
-  const runs = queryRuns();
-  const links = queryTaskLinks();
+  const tasks = q('SELECT id, title, body, assignee, status, priority, tenant, created_at, started_at, completed_at, result FROM tasks ORDER BY created_at DESC LIMIT 200');
+  const events = q('SELECT id, task_id, kind, payload, created_at FROM task_events ORDER BY id DESC LIMIT 100');
+  const comments = q('SELECT id, task_id, author, body, created_at FROM task_comments ORDER BY id DESC LIMIT 50');
+  const runs = q('SELECT id, task_id, profile, status, started_at, ended_at, outcome, summary, metadata FROM task_runs ORDER BY started_at DESC LIMIT 50');
+  const links = q('SELECT parent_id, child_id FROM task_links');
 
-  // Compute profile statuses from running/blocked tasks
   const profiles = PROFILES.map(p => {
     const activeTask = tasks.find(t => t.assignee === p.id && (t.status === 'running' || t.status === 'blocked'));
     const lastRun = runs.find(r => r.profile === p.id);
@@ -119,12 +106,8 @@ function buildSnapshot() {
     };
   });
 
-  // Standup stats
   const byStatus = {};
-  tasks.forEach(t => {
-    if (t.status === 'done' && t.completed_at && t.completed_at < Date.now() / 1000 - 86400) return; // skip old done
-    byStatus[t.status] = (byStatus[t.status] || 0) + 1;
-  });
+  tasks.forEach(t => { byStatus[t.status] = (byStatus[t.status] || 0) + 1; });
   const byProfile = {};
   tasks.filter(t => t.status !== 'done').forEach(t => {
     if (t.assignee) {
@@ -134,113 +117,60 @@ function buildSnapshot() {
   });
 
   return {
-    profiles,
-    tasks,
-    events: events.slice(-100), // last 100
-    comments: comments.slice(-50),
-    runs: runs.slice(-50),
-    links,
+    profiles, tasks, events, comments, runs, links,
     standup: {
       totalTasks: tasks.length,
-      byStatus,
-      byProfile,
+      byStatus, byProfile,
       blockers: tasks.filter(t => t.status === 'blocked'),
     },
     serverTime: Date.now(),
   };
 }
 
-// ---- Express app ----
 const app = express();
 const server = http.createServer(app);
 
-// Serve static files
 app.use(express.static(path.join(__dirname, '..', 'public')));
+app.get('/api/snapshot', (req, res) => res.json(buildSnapshot()));
+app.get('/api/health', (req, res) => res.json({ ok: true, db: !!db, uptime: process.uptime() }));
 
-// REST: snapshot
-app.get('/api/snapshot', (req, res) => {
-  res.json(buildSnapshot());
-});
-
-// REST: health
-app.get('/api/health', (req, res) => {
-  res.json({ ok: true, db: !!db, uptime: process.uptime() });
-});
-
-// ---- WebSocket ----
+// WebSocket
 const wss = new WebSocketServer({ server });
-
-// State tracking for deltas
 let lastEventId = 0;
 let lastCommentId = 0;
-let lastPoll = 0;
 
 function getDelta() {
-  const { events, maxId: eventMax } = queryEvents(lastEventId);
-  const { comments, maxId: commentMax } = queryComments(lastCommentId);
-
+  const evts = q(`SELECT id, task_id, kind, payload, created_at FROM task_events WHERE id > ? ORDER BY id ASC LIMIT 500`, [lastEventId]);
+  const cmts = q(`SELECT id, task_id, author, body, created_at FROM task_comments WHERE id > ? ORDER BY id ASC LIMIT 200`, [lastCommentId]);
   const delta = {};
-  if (events.length > 0) delta.newEvents = events;
-  if (comments.length > 0) delta.newComments = comments;
-
-  if (events.length > 0 || comments.length > 0) {
-    if (events.length > 0) lastEventId = eventMax;
-    if (comments.length > 0) lastCommentId = commentMax;
-    // Check if full refresh needed (task status change)
-    delta.fullSnapshot = buildSnapshot();
-  }
-
+  if (evts.length > 0) { delta.newEvents = evts; lastEventId = evts[evts.length - 1].id; }
+  if (cmts.length > 0) { delta.newComments = cmts; lastCommentId = cmts[cmts.length - 1].id; }
+  if (evts.length > 0 || cmts.length > 0) delta.fullSnapshot = buildSnapshot();
   return delta;
-}
-
-let pollTimer = null;
-
-function startPolling() {
-  if (pollTimer) return;
-  console.log(`[agent-office] Starting DB poll every ${POLL_INTERVAL}ms`);
-
-  // Initial seed
-  const snap = buildSnapshot();
-  lastEventId = snap.events.length > 0 ? snap.events[snap.events.length - 1].id : 0;
-  lastCommentId = snap.comments.length > 0 ? snap.comments[snap.comments.length - 1].id : 0;
-
-  broadcast({ type: 'snapshot', data: snap });
-
-  pollTimer = setInterval(() => {
-    const delta = getDelta();
-    if (Object.keys(delta).length > 0) {
-      broadcast({ type: 'delta', data: delta });
-    }
-  }, POLL_INTERVAL);
 }
 
 function broadcast(msg) {
   const payload = JSON.stringify(msg);
-  wss.clients.forEach(client => {
-    if (client.readyState === 1) {
-      client.send(payload);
-    }
-  });
+  wss.clients.forEach(c => { if (c.readyState === 1) c.send(payload); });
 }
 
 wss.on('connection', (ws) => {
   console.log('[agent-office] Client connected');
-
-  // Send current snapshot immediately
-  const snap = buildSnapshot();
-  ws.send(JSON.stringify({ type: 'snapshot', data: snap }));
-
-  ws.on('close', () => {
-    console.log('[agent-office] Client disconnected');
-  });
+  ws.send(JSON.stringify({ type: 'snapshot', data: buildSnapshot() }));
+  ws.on('close', () => console.log('[agent-office] Client disconnected'));
 });
 
-// ---- Start ----
-if (!openDb()) {
-  console.warn('[agent-office] Starting without kanban DB — UI will show empty state.');
-}
+openDb();
+
+// Seed last IDs
+const snap = buildSnapshot();
+if (snap.events.length > 0) lastEventId = snap.events[0].id;
+if (snap.comments.length > 0) lastCommentId = snap.comments[0].id;
 
 server.listen(PORT, () => {
   console.log(`[agent-office] Server running at http://localhost:${PORT}`);
-  startPolling();
+  setInterval(() => { const d = getDelta(); if (Object.keys(d).length > 0) broadcast({ type: 'delta', data: d }); }, POLL_INTERVAL);
 });
+
+process.on('SIGINT', () => process.exit(0));
+process.on('SIGTERM', () => process.exit(0));

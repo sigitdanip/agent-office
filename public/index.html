@@ -378,8 +378,11 @@ let ws = null;
 
 // ---- WebSocket ----
 function connect() {
-  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const url = `${proto}//${location.host}`;
+  // In remote mode, the server injects __BACKEND_WS__ with the VPS WebSocket URL.
+  // In standalone mode, connect to the same host we loaded from.
+  const url = (typeof __BACKEND_WS__ !== 'undefined' && __BACKEND_WS__)
+    ? __BACKEND_WS__
+    : `${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}`;
   ws = new WebSocket(url);
 
   ws.onopen = () => {
