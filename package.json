@@ -1,0 +1,15 @@
+{
+  "name": "agent-office",
+  "version": "1.0.0",
+  "description": "Live virtual office for your Hermes AI dev team",
+  "main": "server/index.js",
+  "scripts": {
+    "dev": "node server/index.js",
+    "start": "node server/index.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.0.0",
+    "express": "^4.21.0",
+    "ws": "^8.18.0"
+  }
+}

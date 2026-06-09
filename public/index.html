@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent Office</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --card: #181a23;
+    --card-hover: #1e2030;
+    --border: #2a2d3a;
+    --text: #e2e4ed;
+    --text-muted: #8b8fa3;
+    --accent: #6c5ce7;
+    --green: #00b894;
+    --yellow: #fdcb6e;
+    --red: #e17055;
+    --blue: #74b9ff;
+    --purple: #a29bfe;
+    --done: #636e72;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Header */
+  header {
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  header h1 { font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+  header h1 span { color: var(--accent); }
+  #conn-status {
+    font-size: 12px;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-weight: 500;
+  }
+  #conn-status.connected { background: rgba(0,184,148,0.15); color: var(--green); }
+  #conn-status.disconnected { background: rgba(225,112,85,0.15); color: var(--red); }
+
+  /* Layout */
+  .grid {
+    display: grid;
+    grid-template-columns: 280px 1fr 280px;
+    grid-template-rows: auto 1fr auto;
+    gap: 12px;
+    padding: 12px;
+    height: calc(100vh - 60px);
+    min-height: 0;
+  }
+
+  .panel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .panel-header {
+    padding: 12px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+  }
+  .panel-body {
+    overflow-y: auto;
+    padding: 8px;
+    flex: 1;
+    min-height: 0;
+  }
+  .panel-body::-webkit-scrollbar { width: 6px; }
+  .panel-body::-webkit-scrollbar-track { background: transparent; }
+  .panel-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* Team Roster (left) */
+  .roster { grid-column: 1; grid-row: 1 / 4; }
+  .profile-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    cursor: default;
+    transition: background 0.15s;
+    margin-bottom: 4px;
+  }
+  .profile-card:hover { background: var(--card-hover); }
+  .profile-icon { font-size: 20px; width: 32px; text-align: center; }
+  .profile-info { flex: 1; min-width: 0; }
+  .profile-name { font-size: 13px; font-weight: 500; }
+  .profile-model { font-size: 10px; color: var(--text-muted); }
+  .profile-status {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .status-idle { background: rgba(99,110,114,0.2); color: var(--done); }
+  .status-running { background: rgba(0,184,148,0.15); color: var(--green); }
+  .status-blocked { background: rgba(225,112,85,0.15); color: var(--red); }
+  .status-done { background: rgba(99,110,114,0.2); color: var(--done); }
+  .status-ready, .status-todo { background: rgba(116,185,255,0.15); color: var(--blue); }
+
+  /* Kanban Board (center) */
+  .kanban { grid-column: 2; grid-row: 1; }
+  .kanban-board {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    height: 100%;
+    padding-bottom: 4px;
+  }
+  .kanban-column {
+    min-width: 200px;
+    flex: 1;
+  }
+  .kanban-col-header {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    padding: 4px 8px;
+    margin-bottom: 6px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .kanban-col-count {
+    background: var(--border);
+    padding: 0 6px;
+    border-radius: 8px;
+    font-size: 10px;
+  }
+  .task-card {
+    background: var(--card-hover);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 6px;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .task-card:hover { border-color: var(--accent); }
+  .task-title { font-size: 12px; font-weight: 500; margin-bottom: 4px; line-height: 1.3; }
+  .task-meta {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .task-assignee {
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: rgba(108,92,231,0.15);
+    color: var(--accent);
+  }
+  .task-priority {
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 4px;
+  }
+  .priority-high { background: rgba(225,112,85,0.15); color: var(--red); }
+  .priority-medium { background: rgba(253,203,110,0.15); color: var(--yellow); }
+  .priority-low { background: rgba(0,184,148,0.15); color: var(--green); }
+  .task-tenant {
+    font-size: 9px;
+    color: var(--text-muted);
+    margin-left: auto;
+  }
+
+  /* Activity Feed (right top) */
+  .activity { grid-column: 3; grid-row: 1; }
+  .event-item {
+    padding: 8px 10px;
+    border-radius: 6px;
+    margin-bottom: 4px;
+    font-size: 12px;
+    line-height: 1.4;
+  }
+  .event-item:hover { background: var(--card-hover); }
+  .event-kind {
+    display: inline-block;
+    font-size: 9px;
+    font-weight: 600;
+    text-transform: uppercase;
+    padding: 1px 6px;
+    border-radius: 4px;
+    margin-right: 6px;
+  }
+  .kind-created { background: rgba(116,185,255,0.15); color: var(--blue); }
+  .kind-claimed { background: rgba(108,92,231,0.15); color: var(--purple); }
+  .kind-spawned { background: rgba(0,184,148,0.15); color: var(--green); }
+  .kind-completed { background: rgba(99,110,114,0.2); color: var(--done); }
+  .kind-blocked { background: rgba(225,112,85,0.15); color: var(--red); }
+  .kind-tip { background: rgba(253,203,110,0.15); color: var(--yellow); }
+  .event-time {
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+
+  /* Standup + Chat (right bottom) */
+  .standup-chat { grid-column: 3; grid-row: 2 / 4; display: flex; flex-direction: column; gap: 8px; }
+  .standup-stats, .chat-box { flex: 1; min-height: 0; }
+  .stat-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+    font-size: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .stat-row:last-child { border-bottom: none; }
+  .stat-label { color: var(--text-muted); }
+  .stat-value { font-weight: 600; }
+  .blocker-item {
+    padding: 6px 8px;
+    margin: 4px 0;
+    background: rgba(225,112,85,0.1);
+    border-left: 2px solid var(--red);
+    border-radius: 4px;
+    font-size: 12px;
+  }
+
+  .chat-msg {
+    padding: 6px 10px;
+    margin-bottom: 4px;
+    border-radius: 6px;
+    font-size: 12px;
+    line-height: 1.4;
+  }
+  .chat-msg:hover { background: var(--card-hover); }
+  .chat-author { font-weight: 600; color: var(--accent); }
+  .chat-body { color: var(--text); margin-top: 2px; }
+  .chat-time { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+
+  /* Empty state */
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--text-muted);
+    font-size: 14px;
+    text-align: center;
+    padding: 20px;
+  }
+  .empty-state .emoji { font-size: 32px; margin-bottom: 12px; }
+
+  /* Task detail modal */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    max-width: 600px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+  .modal h2 { font-size: 18px; margin-bottom: 8px; }
+  .modal .meta { font-size: 12px; color: var(--text-muted); margin-bottom: 16px; }
+  .modal .body { font-size: 13px; line-height: 1.5; white-space: pre-wrap; }
+  .modal-close {
+    float: right;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 20px;
+    cursor: pointer;
+  }
+  .modal-close:hover { color: var(--text); }
+
+  /* Responsive */
+  @media (max-width: 1024px) {
+    .grid {
+      grid-template-columns: 1fr;
+      grid-template-rows: auto;
+      height: auto;
+    }
+    .roster, .kanban, .activity, .standup-chat {
+      grid-column: 1;
+    }
+    .kanban-board { overflow-x: auto; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1><span>🏢</span> Agent Office</h1>
+  <div id="conn-status" class="disconnected">disconnected</div>
+</header>
+
+<div class="grid" id="app">
+  <!-- Team Roster -->
+  <div class="panel roster">
+    <div class="panel-header">Team Roster</div>
+    <div class="panel-body" id="roster-list"></div>
+  </div>
+
+  <!-- Kanban Board -->
+  <div class="panel kanban">
+    <div class="panel-header"><span>Kanban Board</span><span id="task-count" style="font-size:11px;font-weight:400;"></span></div>
+    <div class="panel-body">
+      <div class="kanban-board" id="kanban-board"></div>
+    </div>
+  </div>
+
+  <!-- Activity Feed -->
+  <div class="panel activity">
+    <div class="panel-header">Activity Feed</div>
+    <div class="panel-body" id="activity-feed"></div>
+  </div>
+
+  <!-- Standup + Chat -->
+  <div class="standup-chat">
+    <div class="panel standup-stats">
+      <div class="panel-header">Standup Summary</div>
+      <div class="panel-body" id="standup-body"></div>
+    </div>
+    <div class="panel chat-box">
+      <div class="panel-header">Agent Chat</div>
+      <div class="panel-body" id="chat-body"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <button class="modal-close" id="modal-close-btn">&times;</button>
+    <h2 id="modal-title"></h2>
+    <div class="meta" id="modal-meta"></div>
+    <div class="body" id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+// ---- State ----
+let state = { profiles: [], tasks: [], events: [], comments: [], runs: [], links: [], standup: {} };
+let ws = null;
+
+// ---- WebSocket ----
+function connect() {
+  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const url = `${proto}//${location.host}`;
+  ws = new WebSocket(url);
+
+  ws.onopen = () => {
+    document.getElementById('conn-status').textContent = '● connected';
+    document.getElementById('conn-status').className = 'connected';
+  };
+
+  ws.onmessage = (e) => {
+    const msg = JSON.parse(e.data);
+    if (msg.type === 'snapshot') {
+      state = msg.data;
+      render();
+    } else if (msg.type === 'delta') {
+      applyDelta(msg.data);
+      render();
+    }
+  };
+
+  ws.onclose = () => {
+    document.getElementById('conn-status').textContent = '● disconnected (reconnecting...)';
+    document.getElementById('conn-status').className = 'disconnected';
+    setTimeout(connect, 3000);
+  };
+
+  ws.onerror = () => ws.close();
+}
+
+function applyDelta(delta) {
+  if (delta.fullSnapshot) {
+    state = delta.fullSnapshot;
+    return;
+  }
+  if (delta.newEvents) {
+    state.events = [...state.events, ...delta.newEvents].slice(-100);
+  }
+  if (delta.newComments) {
+    state.comments = [...state.comments, ...delta.newComments].slice(-50);
+  }
+}
+
+// ---- Helpers ----
+function timeAgo(ts) {
+  if (!ts) return '';
+  const now = Date.now() / 1000;
+  const secs = Math.floor(now - ts);
+  if (secs < 10) return 'just now';
+  if (secs < 60) return `${secs}s ago`;
+  if (secs < 3600) return `${Math.floor(secs/60)}m ago`;
+  if (secs < 86400) return `${Math.floor(secs/3600)}h ago`;
+  return `${Math.floor(secs/86400)}d ago`;
+}
+
+function fmtTime(ts) {
+  if (!ts) return '';
+  const d = new Date(ts * 1000);
+  return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+}
+
+function statusClass(s) {
+  return `status-${s || 'idle'}`;
+}
+
+function priorityClass(p) {
+  if (p >= 2) return 'priority-high';
+  if (p === 1) return 'priority-medium';
+  return 'priority-low';
+}
+
+function statusOrder(s) {
+  const order = { triage: 0, todo: 1, ready: 2, running: 3, blocked: 4, done: 5 };
+  return order[s] ?? 99;
+}
+
+function kindClass(k) {
+  return `kind-${k}`;
+}
+
+function renderProfileIcon(profileId) {
+  const p = state.profiles.find(x => x.id === profileId);
+  return p ? p.icon : '👤';
+}
+
+// ---- Renderers ----
+function render() {
+  renderRoster();
+  renderKanban();
+  renderActivity();
+  renderStandup();
+  renderChat();
+}
+
+function renderRoster() {
+  const el = document.getElementById('roster-list');
+  if (!state.profiles || state.profiles.length === 0) {
+    el.innerHTML = '<div class="empty-state"><div class="emoji">👥</div>No profiles loaded</div>';
+    return;
+  }
+  el.innerHTML = state.profiles.map(p => `
+    <div class="profile-card">
+      <div class="profile-icon">${p.icon}</div>
+      <div class="profile-info">
+        <div class="profile-name">${p.name}</div>
+        <div class="profile-model">${p.model}</div>
+      </div>
+      <span class="profile-status ${statusClass(p.status)}">
+        ${p.status === 'running' ? '▶ running' : p.status === 'blocked' ? '⛔ blocked' : p.status === 'idle' ? '○ idle' : p.status}
+      </span>
+    </div>
+  `).join('');
+}
+
+function renderKanban() {
+  const columns = ['triage', 'todo', 'ready', 'running', 'blocked', 'done'];
+  const labels = { triage: 'Triage', todo: 'Todo', ready: 'Ready', running: 'Running', blocked: 'Blocked', done: 'Done' };
+
+  const board = document.getElementById('kanban-board');
+  const countEl = document.getElementById('task-count');
+
+  const activeTasks = state.tasks || [];
+  countEl.textContent = `${activeTasks.length} tasks`;
+
+  board.innerHTML = columns.map(col => {
+    const tasks = activeTasks.filter(t => t.status === col).sort((a, b) => (b.priority || 0) - (a.priority || 0));
+    return `
+      <div class="kanban-column">
+        <div class="kanban-col-header">
+          <span>${labels[col]}</span>
+          <span class="kanban-col-count">${tasks.length}</span>
+        </div>
+        ${tasks.slice(0, 30).map(t => `
+          <div class="task-card" onclick="showTask('${t.id}')">
+            <div class="task-title">${escHtml(t.title || 'Untitled')}</div>
+            <div class="task-meta">
+              ${t.assignee ? `<span class="task-assignee">${renderProfileIcon(t.assignee)} ${escHtml(t.assignee)}</span>` : ''}
+              <span class="task-priority ${priorityClass(t.priority)}">P${t.priority || 0}</span>
+              ${t.tenant ? `<span class="task-tenant">${escHtml(t.tenant)}</span>` : ''}
+            </div>
+          </div>
+        `).join('')}
+        ${tasks.length === 0 ? '<div style="color:var(--text-muted);font-size:11px;padding:8px;text-align:center;">—</div>' : ''}
+      </div>
+    `;
+  }).join('');
+}
+
+function renderActivity() {
+  const el = document.getElementById('activity-feed');
+  const events = state.events || [];
+  if (events.length === 0) {
+    el.innerHTML = '<div class="empty-state"><div class="emoji">📋</div>No activity yet</div>';
+    return;
+  }
+  el.innerHTML = events.slice(-50).reverse().map(e => {
+    let payload = '';
+    try { const p = JSON.parse(e.payload); payload = p.message || p.status || ''; } catch {}
+    return `
+      <div class="event-item">
+        <span class="event-kind ${kindClass(e.kind)}">${e.kind}</span>
+        <strong>${escHtml(e.task_id)}</strong>
+        ${payload ? `— ${escHtml(payload)}` : ''}
+        <div class="event-time">${fmtTime(e.created_at)}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderStandup() {
+  const el = document.getElementById('standup-body');
+  const s = state.standup;
+  if (!s || !s.byStatus) {
+    el.innerHTML = '<div class="empty-state"><div class="emoji">📊</div>No sprint data</div>';
+    return;
+  }
+  const total = Object.values(s.byStatus).reduce((a, b) => a + b, 0);
+  let html = `
+    <div class="stat-row"><span class="stat-label">Total Active</span><span class="stat-value">${total}</span></div>
+    <div class="stat-row"><span class="stat-label" style="color:var(--blue)">Triage / Todo / Ready</span><span class="stat-value">${(s.byStatus.triage||0)+(s.byStatus.todo||0)+(s.byStatus.ready||0)}</span></div>
+    <div class="stat-row"><span class="stat-label" style="color:var(--green)">▶ Running</span><span class="stat-value">${s.byStatus.running||0}</span></div>
+    <div class="stat-row"><span class="stat-label" style="color:var(--red)">⛔ Blocked</span><span class="stat-value">${s.byStatus.blocked||0}</span></div>
+    <div class="stat-row"><span class="stat-label" style="color:var(--done)">✓ Done</span><span class="stat-value">${s.byStatus.done||0}</span></div>
+  `;
+
+  if (s.blockers && s.blockers.length > 0) {
+    html += '<div style="margin-top:12px;font-size:11px;font-weight:600;color:var(--red);">Blockers</div>';
+    s.blockers.forEach(t => {
+      html += `<div class="blocker-item">${renderProfileIcon(t.assignee)} ${escHtml(t.assignee)} — ${escHtml(t.title)}</div>`;
+    });
+  }
+
+  el.innerHTML = html;
+}
+
+function renderChat() {
+  const el = document.getElementById('chat-body');
+  const comments = state.comments || [];
+  if (comments.length === 0) {
+    el.innerHTML = '<div class="empty-state"><div class="emoji">💬</div>No agent messages yet</div>';
+    return;
+  }
+  el.innerHTML = comments.slice(-30).reverse().map(c => `
+    <div class="chat-msg">
+      <span class="chat-author">${renderProfileIcon(c.author)} ${escHtml(c.author)}</span>
+      <div class="chat-body">${escHtml(c.body)}</div>
+      <div class="chat-time">${fmtTime(c.created_at)}</div>
+    </div>
+  `).join('');
+}
+
+// ---- Modal ----
+function showTask(taskId) {
+  const task = state.tasks.find(t => t.id === taskId);
+  if (!task) return;
+  document.getElementById('modal-title').textContent = task.title || 'Untitled';
+  document.getElementById('modal-meta').innerHTML = `
+    <strong>ID:</strong> ${escHtml(task.id)} |
+    <strong>Assignee:</strong> ${task.assignee ? escHtml(task.assignee) : 'unassigned'} |
+    <strong>Status:</strong> ${task.status} |
+    <strong>Priority:</strong> P${task.priority || 0}
+    ${task.tenant ? ` | <strong>Sprint:</strong> ${escHtml(task.tenant)}` : ''}
+    ${task.created_at ? ` | <strong>Created:</strong> ${fmtTime(task.created_at)}` : ''}
+  `;
+  document.getElementById('modal-body').textContent = task.body || '(no description)';
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function escHtml(s) {
+  if (!s) return '';
+  const div = document.createElement('div');
+  div.textContent = String(s);
+  return div.innerHTML;
+}
+
+// ---- Init ----
+document.getElementById('modal-close-btn').onclick = () => document.getElementById('modal-overlay').classList.remove('open');
+document.getElementById('modal-overlay').onclick = (e) => { if (e.target === e.currentTarget) document.getElementById('modal-overlay').classList.remove('open'); };
+
+connect();
+</script>
+</body>
+</html>
