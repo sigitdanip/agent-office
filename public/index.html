@@ -44,14 +44,14 @@
   header {
     background: var(--bg-panel);
     border-bottom: 1px solid var(--border);
-    padding: 12px 20px;
+    padding: 8px 16px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     position: sticky;
     top: 0;
     z-index: 100;
-    height: 48px;
+    height: 40px;
   }
   header h1 {
     font-family: var(--font-ui);
@@ -73,11 +73,11 @@
   /* LAYOUT */
   .grid {
     display: grid;
-    grid-template-columns: 220px 1fr 280px;
-    grid-template-rows: 1fr auto;
-    gap: 8px;
-    padding: 8px;
-    height: calc(100vh - 48px);
+    grid-template-columns: 200px 1fr 260px;
+    grid-template-rows: 1fr 1fr;
+    gap: 4px;
+    padding: 4px;
+    height: calc(100vh - 40px);
     min-height: 0;
   }
   .panel {
@@ -92,11 +92,11 @@
 
   .panel-header {
     font-family: var(--font-ui);
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    padding: 10px 14px;
+    padding: 5px 10px;
     color: var(--text-dim);
     border-bottom: 1px solid var(--border);
     display: flex;
@@ -116,10 +116,10 @@
   .profile-row {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 7px 10px;
+    gap: 8px;
+    padding: 5px 8px;
     border-bottom: 1px solid var(--border);
-    font-size: 13px;
+    font-size: 12px;
     transition: background 0.1s;
     cursor: default;
   }
@@ -161,13 +161,13 @@
   /* KANBAN */
   .kanban-board {
     display: flex;
-    gap: 6px;
+    gap: 4px;
     overflow-x: auto;
     height: 100%;
-    padding: 4px;
+    padding: 2px;
   }
   .kanban-col {
-    min-width: 190px;
+    min-width: 170px;
     flex: 1;
     background: var(--bg-panel);
     border: 1px solid var(--border);
@@ -176,11 +176,11 @@
   }
   .kanban-col-header {
     font-family: var(--font-ui);
-    font-size: 10px;
+    font-size: 9px;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    padding: 8px 10px;
+    padding: 5px 8px;
     color: var(--text-dim);
     border-bottom: 1px solid var(--border);
     display: flex;
@@ -195,20 +195,20 @@
     font-size: 10px;
   }
   .task-card {
-    padding: 8px 10px;
+    padding: 5px 8px;
     border: 1px solid var(--border);
-    border-radius: 5px;
-    margin: 4px 6px;
+    border-radius: 4px;
+    margin: 3px 4px;
     background: var(--bg-card);
     cursor: pointer;
     transition: border-color 0.15s, background 0.15s;
   }
   .task-card:hover { border-color: var(--accent); background: var(--bg-hover); }
   .task-title {
-    font-size: 12px;
-    line-height: 1.4;
+    font-size: 11px;
+    line-height: 1.3;
     color: var(--text);
-    margin-bottom: 4px;
+    margin-bottom: 3px;
   }
   .task-meta {
     display: flex;
@@ -239,9 +239,9 @@
   /* ACTIVITY */
   .activity { grid-column: 3; grid-row: 1; }
   .event-item {
-    padding: 5px 10px;
+    padding: 3px 8px;
     border-bottom: 1px solid var(--border);
-    font-size: 12px;
+    font-size: 11px;
     line-height: 1.4;
   }
   .event-item:last-child { border-bottom: none; }
@@ -274,8 +274,8 @@
   .stat-row {
     display: flex;
     justify-content: space-between;
-    padding: 4px 10px;
-    font-size: 12px;
+    padding: 2px 8px;
+    font-size: 11px;
     border-bottom: 1px solid var(--border);
   }
   .stat-row:last-child { border-bottom: none; }
@@ -303,9 +303,9 @@
   }
 
   .chat-msg {
-    padding: 4px 10px;
+    padding: 3px 8px;
     border-bottom: 1px solid var(--border);
-    font-size: 12px;
+    font-size: 11px;
     line-height: 1.4;
   }
   .chat-msg:last-child { border-bottom: none; }
@@ -432,7 +432,7 @@
   <!-- KANBAN -->
   <div class="panel kanban">
     <div class="panel-header"><span>Board</span><span id="task-count" style="font-size:10px;font-weight:400;color:var(--text-dim);font-family:var(--font);"></span></div>
-    <div class="panel-body" style="padding:6px;">
+    <div class="panel-body" style="padding:4px;">
       <div class="kanban-board" id="kanban-board"></div>
     </div>
   </div>
