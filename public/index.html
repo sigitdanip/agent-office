@@ -458,16 +458,99 @@
     color: var(--text);
   }
 
-  /* RESPONSIVE */
-  @media (max-width: 1024px) {
+  /* MOBILE BOTTOM NAV */
+  .mobile-nav {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 52px;
+    background: var(--bg-panel);
+    border-top: 1px solid var(--border);
+    z-index: 100;
+    justify-content: space-around;
+    align-items: center;
+  }
+  .mobile-nav-item {
+    font-family: var(--font-ui);
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 6px 8px;
+    cursor: pointer;
+    color: var(--text-dim);
+    border-top: 2px solid transparent;
+    transition: color 0.15s, border-color 0.15s;
+    text-align: center;
+    flex: 1;
+    user-select: none;
+  }
+  .mobile-nav-item:hover { color: var(--text-bright); }
+  .mobile-nav-item.active {
+    color: var(--accent);
+    border-top-color: var(--accent);
+  }
+
+  /* MOBILE BREAKPOINT */
+  @media (max-width: 767px) {
+    .mobile-nav { display: flex; }
+
+    /* Compact header */
+    header {
+      padding: 4px 8px;
+      height: 36px;
+    }
+    header h1 { font-size: 13px; }
+    .team-tabs { margin-left: 8px; gap: 2px; }
+    .team-tab { font-size: 9px; padding: 2px 5px; }
+    #conn-status { font-size: 10px; padding: 2px 6px; }
+
+    /* Single-panel grid */
     .grid {
       grid-template-columns: 1fr;
-      grid-template-rows: auto;
-      height: auto;
+      grid-template-rows: 1fr;
+      height: calc(100vh - 36px - 52px);
+      padding: 2px;
+      gap: 0;
     }
-    .roster, .kanban, .activity, .standup-chat { grid-column: 1; }
-    .kanban { grid-row: auto; }
-    .kanban-board { overflow-x: auto; }
+
+    /* All panels stack at same grid cell */
+    .roster, .kanban, .activity, .standup-chat {
+      grid-column: 1;
+      grid-row: 1;
+    }
+
+    /* Hide all by default, show active via body class */
+    .roster, .activity, .standup-chat { display: none; }
+
+    .mobile-view-board .kanban,
+    .mobile-view-team .roster,
+    .mobile-view-activity .activity,
+    .mobile-view-standup .standup-chat { display: flex; }
+
+    /* Kanban columns narrower on mobile */
+    .kanban-board { padding: 4px; gap: 4px; }
+    .kanban-col { min-width: 200px; width: 220px; }
+    .task-card { padding: 5px 7px; margin: 2px 3px; }
+    .task-title { font-size: 12px; }
+
+    /* Profile roster compact */
+    .profile-row { padding: 4px 6px; font-size: 11px; }
+    .profile-name { font-size: 12px; }
+    .profile-badge { width: 24px; height: 20px; font-size: 9px; }
+
+    /* Activity compact */
+    .event-item { padding: 3px 6px; font-size: 10px; }
+
+    /* Standup & Chat fill container */
+    .standup-chat .panel { flex: 1; }
+
+    /* Modal fits screen */
+    .modal { width: 95%; padding: 14px; }
+    .modal h2 { font-size: 14px; }
+    .modal .body { font-size: 12px; }
   }
 </style>
 </head>
@@ -514,6 +597,14 @@
       <div class="panel-body" id="chat-body"></div>
     </div>
   </div>
+</div>
+
+<!-- MOBILE NAV -->
+<div class="mobile-nav" id="mobile-nav">
+  <span class="mobile-nav-item active" data-mview="board">Board</span>
+  <span class="mobile-nav-item" data-mview="team">Team</span>
+  <span class="mobile-nav-item" data-mview="activity">Activity</span>
+  <span class="mobile-nav-item" data-mview="standup">Standup</span>
 </div>
 
 <!-- MODAL -->
@@ -635,6 +726,18 @@ document.getElementById('team-tabs').onclick=e=>{
   document.querySelectorAll('.team-tab').forEach(t=>t.classList.toggle('active',t.dataset.team===team));
   render()
 };
+// Mobile view switching
+document.getElementById('mobile-nav').onclick = function(e) {
+  const item = e.target.closest('.mobile-nav-item');
+  if (!item) return;
+  const view = item.dataset.mview;
+  document.querySelectorAll('.mobile-nav-item').forEach(i => i.classList.toggle('active', i.dataset.mview === view));
+  document.body.className = document.body.className.replace(/mobile-view-\w+/g, '') + ' mobile-view-' + view;
+};
+
+// Set initial mobile view
+document.body.classList.add('mobile-view-board');
+
 connect();
 </script>
 </body>
