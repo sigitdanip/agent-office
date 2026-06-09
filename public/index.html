@@ -6,10 +6,10 @@
 <title>Agent Office</title>
 <style>
   :root {
-    --bg: #031a1a;
-    --bg-panel: #071d1b;
-    --bg-card: #0a2422;
-    --bg-hover: #0f2d2a;
+    --bg: #000000;
+    --bg-panel: #050808;
+    --bg-card: #0d1111;
+    --bg-hover: #141a1a;
     --border: #1a3a38;
     --border-light: #2a4a48;
     --text: #c8d6d4;
@@ -169,7 +169,8 @@
   .kanban-col {
     min-width: 190px;
     flex: 1;
-    background: var(--bg-card);
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
     border-radius: 6px;
     overflow: hidden;
   }
@@ -186,7 +187,7 @@
     justify-content: space-between;
     position: sticky;
     top: 0;
-    background: var(--bg-card);
+    background: var(--bg-panel);
     z-index: 1;
   }
   .kanban-col-count {
@@ -195,12 +196,14 @@
   }
   .task-card {
     padding: 8px 10px;
-    border-bottom: 1px solid var(--border);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    margin: 4px 6px;
+    background: var(--bg-card);
     cursor: pointer;
-    transition: background 0.1s;
+    transition: border-color 0.15s, background 0.15s;
   }
-  .task-card:last-child { border-bottom: none; }
-  .task-card:hover { background: var(--bg-hover); }
+  .task-card:hover { border-color: var(--accent); background: var(--bg-hover); }
   .task-title {
     font-size: 12px;
     line-height: 1.4;
@@ -311,9 +314,10 @@
     display: inline-block;
     font-family: var(--font);
     font-size: 9px;
-    padding: 0 4px;
-    border: 1px solid var(--border);
+    padding: 1px 5px;
+    border: 1px solid var(--border-light);
     border-radius: 3px;
+    background: var(--bg-card);
     color: var(--text-dim);
     margin-right: 4px;
     letter-spacing: 0.5px;
