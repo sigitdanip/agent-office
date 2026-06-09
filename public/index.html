@@ -70,6 +70,31 @@
   #conn-status.connected { color: var(--accent); border-color: var(--accent); }
   #conn-status.disconnected { color: var(--red); border-color: var(--red); }
 
+  /* TEAM TABS */
+  .team-tabs {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    margin-left: 16px;
+  }
+  .team-tab {
+    font-family: var(--font-ui);
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 4px 10px;
+    cursor: pointer;
+    color: var(--text-dim);
+    border-bottom: 2px solid transparent;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .team-tab:hover { color: var(--text-bright); }
+  .team-tab.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+
   /* LAYOUT */
   .grid {
     display: grid;
@@ -433,6 +458,10 @@
 
 <header>
   <h1>Agent <span>Office</span></h1>
+  <div id="team-tabs" class="team-tabs">
+    <span class="team-tab active" data-team="dev">Dev Office</span>
+    <span class="team-tab" data-team="paper">Paper Office</span>
+  </div>
   <div id="conn-status" class="disconnected">Offline</div>
 </header>
 
@@ -488,17 +517,18 @@ const BADGES = {
 };
 function badge(id){return BADGES[id]||'--'}
 
-let state={profiles:[],tasks:[],events:[],comments:[],runs:[],links:[],standup:{}},ws=null;
+let state={teams:{dev:{profiles:[],tasks:[],events:[],comments:[],runs:[],links:[],standup:{}},paper:{profiles:[],tasks:[],events:[],comments:[],runs:[],links:[],standup:{}}},activeTeam:'dev'},ws=null;
+function current(){return state.teams[state.activeTeam]}
 
 function connect(){
   const url=(typeof __BACKEND_WS__!=='undefined'&&__BACKEND_WS__)?__BACKEND_WS__:`${location.protocol==='https:'?'wss:':'ws:'}//${location.host}`;
   ws=new WebSocket(url);
   ws.onopen=()=>{document.getElementById('conn-status').textContent='Connected';document.getElementById('conn-status').className='connected'};
-  ws.onmessage=e=>{const m=JSON.parse(e.data);if(m.type==='snapshot'){state=m.data;render()}else if(m.type==='delta'){applyDelta(m.data);render()}};
+  ws.onmessage=e=>{const m=JSON.parse(e.data);if(m.type==='snapshot'||m.type==='delta'){state.teams=m.data;render()}};
   ws.onclose=()=>{document.getElementById('conn-status').textContent='Offline';document.getElementById('conn-status').className='disconnected';setTimeout(connect,3000)};
   ws.onerror=()=>ws.close();
 }
-function applyDelta(d){if(d.fullSnapshot){state=d.fullSnapshot;return}if(d.newEvents)state.events=[...state.events,...d.newEvents].slice(-100);if(d.newComments)state.comments=[...state.comments,...d.newComments].slice(-50)}
+function applyDelta(d){state.teams=d}
 
 const COLUMNS=['triage','todo','ready','running','blocked','done'];
 const COLS={triage:'Triage',todo:'Todo',ready:'Ready',running:'Running',blocked:'Blocked',done:'Done'};
@@ -507,8 +537,9 @@ function render(){renderRoster();renderKanban();renderActivity();renderStandup()
 
 function renderRoster(){
   const el=document.getElementById('roster-list');
-  if(!state.profiles||!state.profiles.length){el.innerHTML='<div class="empty-state">No team data</div>';return}
-  el.innerHTML=state.profiles.map(p=>`<div class="profile-row">
+  const profiles=current().profiles;
+  if(!profiles||!profiles.length){el.innerHTML='<div class="empty-state">No team data</div>';return}
+  el.innerHTML=profiles.map(p=>`<div class="profile-row">
     <div class="profile-badge">${badge(p.id)}</div>
     <div class="profile-info"><div class="profile-name">${esc(p.name)}</div><div class="profile-model">${esc(p.model)}</div></div>
     <span class="profile-status status-${p.status||'idle'}">${({running:'Run',blocked:'Blk',idle:'Idle',done:'Done',ready:'Rdy',todo:'Todo',triage:'Trg'})[p.status]||p.status}</span>
@@ -517,7 +548,7 @@ function renderRoster(){
 
 function renderKanban(){
   const el=document.getElementById('kanban-board'),ce=document.getElementById('task-count');
-  const tasks=state.tasks||[];ce.textContent=tasks.length+' tasks';
+  const tasks=current().tasks||[];ce.textContent=tasks.length+' tasks';
   el.innerHTML=COLUMNS.map(col=>{
     const items=tasks.filter(t=>t.status===col).sort((a,b)=>(b.priority||0)-(a.priority||0));
     return `<div class="kanban-col"><div class="kanban-col-header"><span>${COLS[col]}</span><span class="kanban-col-count">${items.length}</span></div>
@@ -530,7 +561,7 @@ function renderKanban(){
           ${t.tenant?`<span class="badge-tenant">${esc(t.tenant)}</span>`:''}
         </div>
       </div>`).join('')}
-      ${items.length===0?'<div style="color:var(--text-dim);font-size:11px;padding:20px;text-align:center;font-family:var(--font);letter-spacing:0.5px;">-- empty --</div>':''}
+      ${items.length===0?'<div style="color:var(--text-dim);font-size:11px;padding:20px;text-align:center;font-family:var(--font);letter-spacing:0.5px;">No active tasks</div>':''}
       </div>
     </div>`
   }).join('')
@@ -538,7 +569,7 @@ function renderKanban(){
 
 function renderActivity(){
   const el=document.getElementById('activity-feed');
-  const events=state.events||[];
+  const events=current().events||[];
   if(!events.length){el.innerHTML='<div class="empty-state">No activity</div>';return}
   el.innerHTML=events.slice(-50).reverse().map(e=>{
     let p='';try{p=JSON.parse(e.payload).message||JSON.parse(e.payload).status||''}catch{}
@@ -547,7 +578,7 @@ function renderActivity(){
 }
 
 function renderStandup(){
-  const el=document.getElementById('standup-body'),s=state.standup;
+  const el=document.getElementById('standup-body'),s=current().standup;
   if(!s||!s.byStatus){el.innerHTML='<div class="empty-state">No data</div>';return}
   let html=`<div class="stat-row"><span class="stat-label">Queued</span><span class="stat-value">${(s.byStatus.triage||0)+(s.byStatus.todo||0)+(s.byStatus.ready||0)}</span></div>
     <div class="stat-row"><span class="stat-label">Running</span><span class="stat-value run">${s.byStatus.running||0}</span></div>
@@ -558,13 +589,13 @@ function renderStandup(){
 }
 
 function renderChat(){
-  const el=document.getElementById('chat-body'),c=state.comments||[];
+  const el=document.getElementById('chat-body'),c=current().comments||[];
   if(!c.length){el.innerHTML='<div class="empty-state">No messages</div>';return}
   el.innerHTML=c.slice(-30).reverse().map(m=>`<div class="chat-msg"><span class="chat-badge">${badge(m.author)}</span><span class="chat-author">${esc(m.author)}</span><div class="chat-body">${esc(m.body)}</div><div class="chat-time">${fmt(m.created_at)}</div></div>`).join('')
 }
 
 function showTask(id){
-  const t=state.tasks.find(x=>x.id===id);if(!t)return;
+  const t=current().tasks.find(x=>x.id===id);if(!t)return;
   document.getElementById('modal-title').textContent=t.title||'Untitled';
   document.getElementById('modal-meta').innerHTML='ID: '+esc(t.id)+' &nbsp;|&nbsp; Assignee: '+(t.assignee?esc(t.assignee):'--')+' &nbsp;|&nbsp; Status: '+(t.status||'--')+' &nbsp;|&nbsp; P'+(t.priority||0)+(t.tenant?' &nbsp;|&nbsp; Sprint: '+esc(t.tenant):'')+(t.created_at?' &nbsp;|&nbsp; '+fmt(t.created_at):'');
   document.getElementById('modal-body').textContent=t.body||'(No description)';
@@ -576,6 +607,15 @@ function esc(s){if(!s)return'';var d=document.createElement('div');d.textContent
 
 document.getElementById('modal-close-btn').onclick=()=>document.getElementById('modal-overlay').classList.remove('open');
 document.getElementById('modal-overlay').onclick=e=>{if(e.target===e.currentTarget)document.getElementById('modal-overlay').classList.remove('open')};
+document.getElementById('team-tabs').onclick=e=>{
+  const tab=e.target.closest('.team-tab');
+  if(!tab)return;
+  const team=tab.dataset.team;
+  if(team===state.activeTeam)return;
+  state.activeTeam=team;
+  document.querySelectorAll('.team-tab').forEach(t=>t.classList.toggle('active',t.dataset.team===team));
+  render()
+};
 connect();
 </script>
 </body>
