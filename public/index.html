@@ -161,65 +161,79 @@
   /* KANBAN */
   .kanban-board {
     display: flex;
-    gap: 4px;
+    gap: 6px;
     overflow-x: auto;
+    overflow-y: hidden;
     height: 100%;
-    padding: 2px;
+    padding: 4px 6px;
+    white-space: nowrap;
   }
   .kanban-col {
-    min-width: 170px;
-    flex: 1;
+    min-width: 240px;
+    width: 260px;
+    flex: none;
     background: var(--bg-panel);
     border: 1px solid var(--border);
     border-radius: 6px;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    white-space: normal;
+  }
+  .kanban-col-body {
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
   }
   .kanban-col-header {
     font-family: var(--font-ui);
-    font-size: 9px;
+    font-size: 11px;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    padding: 5px 8px;
+    padding: 7px 10px;
     color: var(--text-dim);
     border-bottom: 1px solid var(--border);
     display: flex;
     justify-content: space-between;
+    align-items: center;
     position: sticky;
     top: 0;
     background: var(--bg-panel);
     z-index: 1;
+    flex-shrink: 0;
   }
   .kanban-col-count {
     color: var(--text-dim);
-    font-size: 10px;
+    font-size: 11px;
   }
   .task-card {
-    padding: 5px 8px;
+    padding: 7px 10px;
     border: 1px solid var(--border);
     border-radius: 4px;
-    margin: 3px 4px;
+    margin: 4px 5px;
     background: var(--bg-card);
     cursor: pointer;
     transition: border-color 0.15s, background 0.15s;
   }
   .task-card:hover { border-color: var(--accent); background: var(--bg-hover); }
   .task-title {
-    font-size: 11px;
-    line-height: 1.3;
+    font-size: 13px;
+    line-height: 1.35;
     color: var(--text);
-    margin-bottom: 3px;
+    margin-bottom: 4px;
+    font-weight: 500;
   }
   .task-meta {
     display: flex;
-    gap: 4px;
+    gap: 5px;
     flex-wrap: wrap;
     align-items: center;
   }
   .task-badge {
     font-family: var(--font);
-    font-size: 9px;
-    padding: 1px 5px;
+    font-size: 10px;
+    padding: 2px 6px;
     border-radius: 3px;
     border: 1px solid var(--border);
     color: var(--text-dim);
@@ -230,7 +244,7 @@
   .badge-pri { border-color: rgba(225,112,85,0.3); color: var(--red); }
   .badge-tenant {
     font-family: var(--font);
-    font-size: 9px;
+    font-size: 10px;
     color: var(--text-dim);
     margin-left: auto;
     letter-spacing: 0px;
@@ -507,6 +521,7 @@ function renderKanban(){
   el.innerHTML=COLUMNS.map(col=>{
     const items=tasks.filter(t=>t.status===col).sort((a,b)=>(b.priority||0)-(a.priority||0));
     return `<div class="kanban-col"><div class="kanban-col-header"><span>${COLS[col]}</span><span class="kanban-col-count">${items.length}</span></div>
+      <div class="kanban-col-body">
       ${items.slice(0,50).map(t=>`<div class="task-card" onclick="showTask('${t.id}')">
         <div class="task-title">${esc(t.title||'Untitled')}</div>
         <div class="task-meta">
@@ -515,7 +530,8 @@ function renderKanban(){
           ${t.tenant?`<span class="badge-tenant">${esc(t.tenant)}</span>`:''}
         </div>
       </div>`).join('')}
-      ${items.length===0?'<div style="color:var(--text-dim);font-size:10px;padding:14px;text-align:center;font-family:var(--font);letter-spacing:0.5px;">-- empty --</div>':''}
+      ${items.length===0?'<div style="color:var(--text-dim);font-size:11px;padding:20px;text-align:center;font-family:var(--font);letter-spacing:0.5px;">-- empty --</div>':''}
+      </div>
     </div>`
   }).join('')
 }
