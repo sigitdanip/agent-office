@@ -502,8 +502,191 @@
     border-top-color: var(--accent);
   }
 
+  /* ── AGENT INSPECTOR PANEL ── */
+  .inspector-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 150;
+  }
+  .inspector-overlay.open { display: block; }
+
+  .inspector-panel {
+    position: fixed;
+    top: 40px;
+    right: 0;
+    width: 420px;
+    max-width: 90vw;
+    height: calc(100vh - 40px);
+    background: var(--bg-panel);
+    border-left: 1px solid var(--border-light);
+    z-index: 160;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transform: translateX(100%);
+    transition: transform 0.2s ease;
+  }
+  .inspector-panel.open { transform: translateX(0); }
+
+  .inspector-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    background: var(--bg-panel);
+  }
+  .inspector-header .profile-badge {
+    width: 32px; height: 26px;
+    font-size: 11px;
+    flex-shrink: 0;
+  }
+  .inspector-header .inspector-profile-info { flex: 1; min-width: 0; }
+  .inspector-header .inspector-profile-name {
+    font-size: 14px; font-weight: 600; color: var(--text-bright);
+  }
+  .inspector-header .inspector-profile-subtitle {
+    font-size: 10px; color: var(--text-dim); font-family: var(--font);
+  }
+  .inspector-close {
+    background: none; border: 1px solid var(--border);
+    color: var(--text-dim); font-size: 16px; cursor: pointer;
+    padding: 2px 10px; font-weight: 600; line-height: 1;
+  }
+  .inspector-close:hover { border-color: var(--red); color: var(--red); }
+
+  .inspector-body {
+    overflow-y: auto; flex: 1; min-height: 0;
+    padding: 8px;
+  }
+
+  .insp-section {
+    margin-bottom: 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .insp-section-header {
+    font-family: var(--font-ui);
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 6px 10px;
+    color: var(--text-dim);
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-card);
+  }
+  .insp-section-body { padding: 8px 10px; }
+
+  .insp-kv {
+    display: flex; align-items: baseline; gap: 6px;
+    padding: 3px 0; font-size: 12px;
+  }
+  .insp-kv-label {
+    font-family: var(--font); font-size: 10px; color: var(--text-dim);
+    min-width: 70px; text-transform: uppercase; letter-spacing: 0.5px;
+    flex-shrink: 0;
+  }
+  .insp-kv-value { color: var(--text); font-family: var(--font); font-size: 11px; word-break: break-all; }
+  .insp-kv-value.cmd { color: var(--accent); }
+  .insp-kv-value.err { color: var(--red); }
+
+  .insp-progress { margin-top: 4px; }
+  .insp-progress-row {
+    display: flex; align-items: center; gap: 8px;
+    font-family: var(--font); font-size: 10px;
+    margin-bottom: 2px;
+  }
+  .insp-progress-label { color: var(--text-dim); }
+  .insp-progress-text { color: var(--text); font-weight: 500; }
+  .insp-progress-bar {
+    height: 6px; background: var(--bg-hover); border-radius: 3px;
+    overflow: hidden; margin: 2px 0 4px;
+  }
+  .insp-progress-fill {
+    height: 100%; background: var(--accent); border-radius: 3px;
+    transition: width 0.3s ease;
+  }
+  .insp-progress-fill.error { background: var(--red); }
+  .insp-progress-fill.warn { background: var(--yellow); }
+
+  .insp-console {
+    background: #08080c;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    max-height: 180px;
+    overflow-y: auto;
+    font-family: var(--font);
+    font-size: 10px;
+    line-height: 1.5;
+    padding: 6px 8px;
+    color: var(--text-dim);
+  }
+  .insp-console-line {
+    white-space: pre-wrap; word-break: break-all;
+    padding: 1px 0;
+    border-bottom: 1px solid rgba(26,58,56,0.3);
+  }
+  .insp-console-line:last-child { border-bottom: none; }
+  .insp-console-line .ts {
+    color: #4a6a66; margin-right: 8px;
+    font-size: 9px;
+  }
+  .insp-console-line .out { color: #8ab4a8; }
+  .insp-console-line .err { color: var(--red); }
+
+  .insp-event {
+    padding: 4px 8px; border-bottom: 1px solid var(--border);
+    font-size: 11px; line-height: 1.4;
+  }
+  .insp-event:last-child { border-bottom: none; }
+  .insp-event-kind {
+    font-family: var(--font); font-size: 9px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    margin-right: 4px;
+  }
+
+  .insp-run {
+    padding: 5px 8px; border-bottom: 1px solid var(--border);
+    font-size: 11px; line-height: 1.4;
+  }
+  .insp-run:last-child { border-bottom: none; }
+  .insp-run-outcome {
+    font-family: var(--font); font-size: 9px; font-weight: 600;
+    text-transform: uppercase; padding: 1px 5px; border-radius: 3px;
+    margin-right: 6px;
+  }
+  .outcome-completed { background: rgba(0,184,148,0.12); color: var(--accent); }
+  .outcome-failed { background: rgba(225,112,85,0.12); color: var(--red); }
+  .outcome-timed_out { background: rgba(253,203,110,0.12); color: var(--yellow); }
+  .outcome-interrupted { background: rgba(116,185,255,0.12); color: var(--blue); }
+
+  .insp-section-empty {
+    color: var(--text-dim); font-size: 11px;
+    text-align: center; padding: 12px;
+    font-family: var(--font); letter-spacing: 0.5px;
+  }
+
+  .insp-link {
+    color: var(--accent); cursor: pointer; text-decoration: none;
+    font-family: var(--font); font-size: 11px;
+  }
+  .insp-link:hover { text-decoration: underline; }
+
   /* MOBILE BREAKPOINT */
   @media (max-width: 767px) {
+    .inspector-panel {
+      width: 100vw; max-width: 100vw;
+      top: 36px; height: calc(100vh - 36px - 52px);
+    }
+    .inspector-overlay.open { display: none; } /* no overlay on mobile, panel covers */
+    .inspector-panel .inspector-header { padding: 8px 10px; }
+    .inspector-panel .inspector-header .profile-badge { width: 26px; height: 22px; font-size: 10px; }
+    .inspector-panel .inspector-header .inspector-profile-name { font-size: 13px; }
     .mobile-nav { display: flex; }
 
     /* Compact header */
@@ -626,6 +809,20 @@
   </div>
 </div>
 
+<!-- AGENT INSPECTOR -->
+<div class="inspector-overlay" id="inspector-overlay"></div>
+<div class="inspector-panel" id="inspector-panel">
+  <div class="inspector-header" id="inspector-header">
+    <div class="profile-badge" id="inspector-badge">--</div>
+    <div class="inspector-profile-info">
+      <div class="inspector-profile-name" id="inspector-name"></div>
+      <div class="inspector-profile-subtitle" id="inspector-subtitle"></div>
+    </div>
+    <button class="inspector-close" id="inspector-close-btn">X</button>
+  </div>
+  <div class="inspector-body" id="inspector-body"></div>
+</div>
+
 <script>
 const BADGES = {
   'ai-engineer':'AI','api-dev':'API','bash-dev':'SH','c-cpp-dev':'CPP',
@@ -636,7 +833,7 @@ const BADGES = {
 };
 function badge(id){return BADGES[id]||'--'}
 
-let state={teams:{dev:{profiles:[],tasks:[],events:[],comments:[],runs:[],links:[],standup:{}},paper:{profiles:[],tasks:[],events:[],comments:[],runs:[],links:[],standup:{}}},activeTeam:'dev'},ws=null;
+let state={teams:{dev:{profiles:[],tasks:[],events:[],comments:[],runs:[],links:[],standup:{}},paper:{profiles:[],tasks:[],events:[],comments:[],runs:[],links:[],standup:{}}},activeTeam:'dev',inspectorProfile:null},ws=null;
 function current(){return state.teams[state.activeTeam]}
 
 function connect(){
@@ -652,13 +849,13 @@ function applyDelta(d){state.teams=d}
 const COLUMNS=['parking-lot','brainstorm','triage','todo','ready','running','blocked','done'];
 const COLS={'parking-lot':'Parking Lot',brainstorm:'Brainstorm',triage:'Triage',todo:'Todo',ready:'Ready',running:'Running',blocked:'Blocked',done:'Done'};
 
-function render(){renderRoster();renderKanban();renderActivity();renderStandup();renderChat()}
+function render(){renderRoster();renderKanban();renderActivity();renderStandup();renderChat();renderInspector()}
 
 function renderRoster(){
   const el=document.getElementById('roster-list');
   const profiles=current().profiles;
   if(!profiles||!profiles.length){el.innerHTML='<div class="empty-state">No team data</div>';return}
-  el.innerHTML=profiles.map(p=>`<div class="profile-row">
+  el.innerHTML=profiles.map(p=>`<div class="profile-row" data-profile-id="${esc(p.id)}" style="cursor:pointer;">
     <div class="profile-badge">${badge(p.id)}</div>
     <div class="profile-info"><div class="profile-name">${esc(p.name)}</div><div class="profile-model">${esc(p.model)}</div></div>
     <span class="profile-status status-${p.status||'idle'}">${({running:'Run',blocked:'Blk',idle:'Idle',done:'Done',ready:'Rdy',todo:'Todo',triage:'Trg',brainstorm:'Brm','parking-lot':'Prk'})[p.status]||p.status}</span>
@@ -725,8 +922,20 @@ function showTask(id){
 function fmt(t){if(!t)return'';return new Date(t*1e3).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'})}
 function esc(s){if(!s)return'';var d=document.createElement('div');d.textContent=String(s);return d.innerHTML}
 
+// Roster click -> open inspector
+document.getElementById('roster-list').onclick=e=>{
+  const row=e.target.closest('.profile-row');
+  if(row){const pid=row.dataset.profileId;if(pid)showInspector(pid)}
+};
+
+// Modal
 document.getElementById('modal-close-btn').onclick=()=>document.getElementById('modal-overlay').classList.remove('open');
 document.getElementById('modal-overlay').onclick=e=>{if(e.target===e.currentTarget)document.getElementById('modal-overlay').classList.remove('open')};
+
+// Inspector close
+document.getElementById('inspector-close-btn').onclick=closeInspector;
+document.getElementById('inspector-overlay').onclick=closeInspector;
+
 document.getElementById('team-tabs').onclick=e=>{
   const tab=e.target.closest('.team-tab');
   if(!tab)return;
@@ -744,6 +953,208 @@ document.getElementById('mobile-nav').onclick = function(e) {
   document.querySelectorAll('.mobile-nav-item').forEach(i => i.classList.toggle('active', i.dataset.mview === view));
   document.body.className = document.body.className.replace(/mobile-view-\w+/g, '') + ' mobile-view-' + view;
 };
+
+
+// ── AGENT INSPECTOR ──
+
+function showInspector(profileId){
+  state.inspectorProfile=profileId;
+  document.getElementById('inspector-panel').classList.add('open');
+  document.getElementById('inspector-overlay').classList.add('open');
+  renderInspector();
+}
+
+function closeInspector(){
+  state.inspectorProfile=null;
+  document.getElementById('inspector-panel').classList.remove('open');
+  document.getElementById('inspector-overlay').classList.remove('open');
+}
+
+function renderInspector(){
+  if(!state.inspectorProfile)return;
+  const pid=state.inspectorProfile;
+  const p=current().profiles.find(x=>x.id===pid);
+  if(!p){closeInspector();return;}
+
+  // Header
+  document.getElementById('inspector-badge').textContent=badge(pid);
+  document.getElementById('inspector-badge').className='profile-badge';
+  document.getElementById('inspector-name').textContent=p.name||pid;
+  document.getElementById('inspector-subtitle').innerHTML='Model: '+esc(p.model||'--')+' | Status: <span class="profile-status status-'+(p.status||'idle')+'">'+({running:'Run',blocked:'Blk',idle:'Idle',done:'Done',ready:'Rdy',todo:'Todo',triage:'Trg',brainstorm:'Brm','parking-lot':'Prk'})[p.status||'idle']+'</span>';
+
+  // Find active task for this profile
+  const activeTask=p.currentTaskId?(current().tasks.find(t=>t.id===p.currentTaskId)||null):null;
+  const events=current().events||[];
+  const runs=current().runs||[];
+
+  // Gather heartbeat events for active task
+  const taskEvents=activeTask?events.filter(e=>e.task_id===activeTask.id).reverse():[];
+  const heartbeats=taskEvents.filter(e=>e.kind==='heartbeat');
+  const latestHb=heartbeats.find(e=>{if(!e.payload)return false;try{const p=JSON.parse(e.payload);return p&&typeof p==='object'&&Object.keys(p).length>0}catch{return false}});
+  const nonHbEvents=taskEvents.filter(e=>e.kind!=='heartbeat').slice(0,20);
+
+  // Gather profile runs (last 10)
+  const profileRuns=runs.filter(r=>r.profile===pid).slice(0,10);
+
+  // Parse heartbeat payload
+  let hbPayload={};
+  if(latestHb){try{hbp=JSON.parse(latestHb.payload);if(hbp)hbPayload=hbp}catch{}}
+
+  let html='';
+
+  // SECTION: Current Task
+  html+='<div class="insp-section">';
+  html+='<div class="insp-section-header">Current Task</div>';
+  html+='<div class="insp-section-body">';
+  if(activeTask){
+    html+='<div class="insp-kv"><span class="insp-kv-label">Task</span><a class="insp-link" href="javascript:showTask(\''+esc(activeTask.id)+'\')">'+esc(activeTask.title||'Untitled')+'</a></div>';
+    html+='<div class="insp-kv"><span class="insp-kv-label">ID</span><span class="insp-kv-value" style="font-size:10px;color:var(--text-dim)">'+esc(activeTask.id)+'</span></div>';
+    html+='<div class="insp-kv"><span class="insp-kv-label">Priority</span><span class="insp-kv-value">P'+(activeTask.priority||0)+'</span></div>';
+    if(activeTask.tenant){html+='<div class="insp-kv"><span class="insp-kv-label">Sprint</span><span class="insp-kv-value">'+esc(activeTask.tenant)+'</span></div>';}
+  }else{
+    html+='<div class="insp-section-empty">No active task</div>';
+  }
+  html+='</div></div>';
+
+  // SECTION: Live Data
+  html+='<div class="insp-section">';
+  html+='<div class="insp-section-header">Live Data</div>';
+  html+='<div class="insp-section-body">';
+
+  const cmd=p.currentCommand||hbPayload.command||'--';
+  html+='<div class="insp-kv"><span class="insp-kv-label">Command</span><span class="insp-kv-value cmd">'+esc(cmd)+'</span></div>';
+
+  const prog=p.currentProgress||hbPayload.progress||'';
+  let progPct=hbPayload.progressPct||hbPayload.progressPercent||null;
+  if(!progPct&&prog){
+    const m=prog.match(/(\d+)\s*%/);
+    if(m)progPct=parseInt(m[1]);
+    else{
+      const parts=prog.match(/(\d+)\s*\/\s*(\d+)/);
+      if(parts)progPct=Math.round((parseInt(parts[1])/parseInt(parts[2]))*100);
+    }
+  }
+  html+='<div class="insp-progress">';
+  html+='<div class="insp-progress-row"><span class="insp-progress-label">Progress</span><span class="insp-progress-text">'+(typeof progPct==='number'?progPct+'%':(prog||'--'))+'</span></div>';
+  if(typeof progPct==='number'){
+    html+='<div class="insp-progress-bar"><div class="insp-progress-fill" style="width:'+Math.min(100,Math.max(0,progPct))+'%;"></div></div>';
+  }
+  html+='</div>';
+
+  const tool=p.currentTool||hbPayload.toolCall||hbPayload.tool||null;
+  html+='<div class="insp-kv"><span class="insp-kv-label">Tool</span><span class="insp-kv-value">'+esc(tool||'--')+'</span></div>';
+
+  const skill=p.currentSkill||hbPayload.skill||hbPayload.currentSkill||null;
+  html+='<div class="insp-kv"><span class="insp-kv-label">Skill</span><span class="insp-kv-value">'+esc(skill||'--')+'</span></div>';
+
+  const fileEdited=p.fileEdited||hbPayload.fileEdited||hbPayload.file||null;
+  html+='<div class="insp-kv"><span class="insp-kv-label">File</span><span class="insp-kv-value" style="font-size:10px;">'+esc(fileEdited||'--')+'</span></div>';
+
+  const errState=hbPayload.errorState||hbPayload.error||null;
+  if(errState){
+    html+='<div class="insp-kv"><span class="insp-kv-label">Error</span><span class="insp-kv-value err">'+esc(String(errState))+'</span></div>';
+  }
+
+  if(hbPayload.sessionDuration!=null){
+    const mins=Math.floor(hbPayload.sessionDuration/60);
+    const secs=hbPayload.sessionDuration%60;
+    html+='<div class="insp-kv"><span class="insp-kv-label">Duration</span><span class="insp-kv-value">'+mins+'m '+secs+'s</span></div>';
+  }
+
+  if(hbPayload.model||hbPayload.provider){
+    html+='<div class="insp-kv"><span class="insp-kv-label">Model</span><span class="insp-kv-value">'+esc(hbPayload.provider?hbPayload.provider+' / ':'')+esc(hbPayload.model||p.model||'--')+'</span></div>';
+  }
+
+  if(hbPayload.contextPct!=null){
+    html+='<div class="insp-kv"><span class="insp-kv-label">Context</span><span class="insp-kv-value">'+hbPayload.contextPct+'%</span></div>';
+  }
+
+  if(hbPayload.turnCount!=null){
+    html+='<div class="insp-kv"><span class="insp-kv-label">Turn</span><span class="insp-kv-value">'+hbPayload.turnCount+(hbPayload.maxTurns?' / '+hbPayload.maxTurns:'')+'</span></div>';
+  }
+
+  if(hbPayload.subagentActive!=null){
+    html+='<div class="insp-kv"><span class="insp-kv-label">Subagent</span><span class="insp-kv-value" style="color:'+(hbPayload.subagentActive?'var(--accent)':'var(--text-dim)')+';">'+(hbPayload.subagentActive?'Active':'Idle')+'</span></div>';
+  }
+  if(hbPayload.memoryUpdated!=null){
+    html+='<div class="insp-kv"><span class="insp-kv-label">Memory</span><span class="insp-kv-value" style="color:'+(hbPayload.memoryUpdated?'var(--accent)':'var(--text-dim)')+';">'+(hbPayload.memoryUpdated?'Updated':'--')+'</span></div>';
+  }
+
+  html+='</div></div>';
+
+  // SECTION: Terminal Output
+  html+='<div class="insp-section">';
+  html+='<div class="insp-section-header">Terminal Output</div>';
+  html+='<div class="insp-section-body">';
+  if(heartbeats.length===0){
+    html+='<div class="insp-section-empty">No terminal output yet</div>';
+  }else{
+    html+='<div class="insp-console">';
+    heartbeats.slice(0,30).reverse().forEach(hb=>{
+      let pl={};
+      try{let p=JSON.parse(hb.payload);if(p)pl=p}catch{}
+      const ts=fmt(hb.created_at);
+      const cmd2=pl.command||'';
+      const prog2=pl.progress||'';
+      const out=pl.terminalOutput||pl.outputSnippet||pl.output||'';
+      const err=pl.errorState||pl.error||'';
+      html+='<div class="insp-console-line">';
+      html+='<span class="ts">'+ts+'</span>';
+      if(cmd2)html+='<span class="out">$ '+esc(cmd2)+'</span>';
+      if(prog2)html+=' <span style="color:var(--accent);">['+esc(prog2)+']</span>';
+      if(out)html+=' <span class="out">'+esc(out)+'</span>';
+      if(err)html+=' <span class="err">'+esc(String(err))+'</span>';
+      if(!cmd2&&!out&&!err)html+='<span class="out">heartbeat #'+hb.id+'</span>';
+      html+='</div>';
+    });
+    html+='</div>';
+  }
+  html+='</div></div>';
+
+  // SECTION: Filtered Event Log
+  html+='<div class="insp-section">';
+  html+='<div class="insp-section-header">Event Log'+(activeTask?' (Task '+esc(activeTask.id).slice(-8)+')':'')+'</div>';
+  html+='<div class="insp-section-body">';
+  if(nonHbEvents.length===0){
+    html+='<div class="insp-section-empty">No events</div>';
+  }else{
+    nonHbEvents.forEach(e=>{
+      let pl='';try{let p=JSON.parse(e.payload);if(p)pl=p.message||p.status||(typeof p==='string'?p:'')||''}catch{}
+      html+='<div class="insp-event">';
+      html+='<span class="insp-event-kind kind-'+e.kind+'">'+e.kind.toUpperCase()+'</span>';
+      if(pl)html+='<span style="color:var(--text)"> &mdash; '+esc(String(pl))+'</span>';
+      html+='<div class="event-time">'+fmt(e.created_at)+'</div>';
+      html+='</div>';
+    });
+  }
+  html+='</div></div>';
+
+  // SECTION: Run History
+  html+='<div class="insp-section">';
+  html+='<div class="insp-section-header">Run History</div>';
+  html+='<div class="insp-section-body">';
+  if(profileRuns.length===0){
+    html+='<div class="insp-section-empty">No runs recorded</div>';
+  }else{
+    profileRuns.forEach(r=>{
+      let outcomeLabel=r.outcome||r.status||'';
+      let outcomeClass='';
+      if(outcomeLabel==='completed')outcomeClass='outcome-completed';
+      else if(outcomeLabel==='failed')outcomeClass='outcome-failed';
+      else if(outcomeLabel==='timed_out')outcomeClass='outcome-timed_out';
+      else if(outcomeLabel==='interrupted')outcomeClass='outcome-interrupted';
+      else outcomeClass='';
+      html+='<div class="insp-run">';
+      html+='<span class="insp-run-outcome '+outcomeClass+'">'+outcomeLabel.toUpperCase()+'</span>';
+      html+='<span style="color:var(--text);">'+(r.summary?esc(r.summary).slice(0,80):(r.task_id?esc(r.task_id):''))+'</span>';
+      html+='<div class="event-time">'+fmt(r.started_at)+'</div>';
+      html+='</div>';
+    });
+  }
+  html+='</div></div>';
+
+  document.getElementById('inspector-body').innerHTML=html;
+}
 
 // Set initial mobile view
 document.body.classList.add('mobile-view-board');
