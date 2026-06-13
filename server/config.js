@@ -1,11 +1,13 @@
 require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
+const yaml = require('js-yaml');
 
 const PORT = process.env.PORT || 3000;
 const REMOTE_BACKEND = process.env.REMOTE_BACKEND || null;
 const POLL_INTERVAL = parseInt(process.env.POLL_INTERVAL || '2000', 10);
 const PROFILES_DIR = process.env.HERMES_PROFILES_DIR || '/root/.hermes/profiles/';
+const METADATA_CACHE_TTL = 60000; // 60 seconds
 
 // Overrides for names/icons that auto-derivation can't get right
 const NAME_OVERRIDES = {
@@ -38,7 +40,6 @@ function discoverProfiles() {
   const dev = [];
   const paper = [];
   for (const id of ids) {
-    if (id === 'dev-lead') continue;
     let model = 'unknown';
     try {
       const raw = fs.readFileSync(path.join(PROFILES_DIR, id, 'config.yaml'), 'utf-8');
@@ -75,4 +76,70 @@ const COLUMN_LABELS = {
   ready: 'Ready', running: 'Running', blocked: 'Blocked', done: 'Done',
 };
 
-module.exports = { PORT, REMOTE_BACKEND, POLL_INTERVAL, TEAMS, COLUMNS, COLUMN_LABELS, discoverProfiles };
+// Profile metadata cache — avoids re-reading config.yaml on every snapshot build
+const metadataCache = {};
+
+function getProfileMetadata(profileId) {
+  const now = Date.now();
+  const entry = metadataCache[profileId];
+  if (entry && (now - entry.timestamp) < METADATA_CACHE_TTL) {
+    return entry.data;
+  }
+
+  const profileDir = path.join(PROFILES_DIR, profileId);
+  const data = {};
+
+  // Parse config.yaml
+  try {
+    const configPath = path.join(profileDir, 'config.yaml');
+    if (fs.existsSync(configPath)) {
+      const raw = fs.readFileSync(configPath, 'utf-8');
+      const cfg = yaml.load(raw) || {};
+
+      if (cfg.model) {
+        data.provider = cfg.model.provider || null;
+        data.baseUrl = cfg.model.base_url || null;
+      }
+      if (cfg.agent) {
+        data.maxTurns = cfg.agent.max_turns || null;
+        data.disabledToolsets = cfg.agent.disabled_toolsets || [];
+        data.reasoningEffort = cfg.agent.reasoning_effort || null;
+      }
+      data.goalMode = (cfg.goals && cfg.goals.max_turns > 0) || false;
+      data.toolsets = cfg.toolsets || [];
+      if (cfg.terminal) {
+        data.terminalBackend = cfg.terminal.backend || null;
+      }
+      if (cfg.display) {
+        data.personality = cfg.display.personality || null;
+      }
+      if (cfg.memory) {
+        data.memoryEnabled = cfg.memory.memory_enabled !== false;
+      }
+      if (cfg.delegation) {
+        data.maxConcurrentChildren = cfg.delegation.max_concurrent_children || null;
+        data.maxSpawnDepth = cfg.delegation.max_spawn_depth || null;
+      }
+    }
+  } catch (e) {
+    // Config read failures are non-fatal — return bare data
+    console.error(`[agent-office] Failed to parse config for ${profileId}: ${e.message}`);
+  }
+
+  // Parse profile.yaml for description
+  try {
+    const profileYamlPath = path.join(profileDir, 'profile.yaml');
+    if (fs.existsSync(profileYamlPath)) {
+      const raw = fs.readFileSync(profileYamlPath, 'utf-8');
+      const py = yaml.load(raw) || {};
+      data.description = py.description || null;
+    }
+  } catch (e) {
+    // Non-fatal
+  }
+
+  metadataCache[profileId] = { timestamp: now, data };
+  return data;
+}
+
+module.exports = { PORT, REMOTE_BACKEND, POLL_INTERVAL, TEAMS, COLUMNS, COLUMN_LABELS, discoverProfiles, getProfileMetadata, METADATA_CACHE_TTL };
