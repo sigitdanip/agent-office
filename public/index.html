@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>Agent Office</title>
 <style>
   :root {
@@ -826,10 +829,10 @@
 <script>
 const BADGES = {
   'ai-engineer':'AI','api-dev':'API','bash-dev':'SH','c-cpp-dev':'CPP',
-  'data-dev':'DT','explorer':'EXP','frontend-dev':'FE','infra-dev':'INF',
+  'data-dev':'DT','dev-lead':'DL','explorer':'EXP','frontend-dev':'FE','infra-dev':'INF',
   'python-dev':'PY','qa-engineer':'QA','researcher':'RCH','workflow-dev':'WF',
   'paper-lead':'PL','paper-researcher':'RCH','paper-writer':'WR',
-  'paper-visualizer':'VIZ','paper-reviewer':'RV'
+  'paper-visualizer':'VIZ','paper-reviewer':'RV','paper-technical':'PT'
 };
 function badge(id){return BADGES[id]||'--'}
 
@@ -887,7 +890,7 @@ function renderActivity(){
   const el=document.getElementById('activity-feed');
   const events=current().events||[];
   if(!events.length){el.innerHTML='<div class="empty-state">No activity</div>';return}
-  el.innerHTML=events.slice(-50).reverse().map(e=>{
+  el.innerHTML=events.slice(0, 50).map(e=>{
     let p='';try{p=JSON.parse(e.payload).message||JSON.parse(e.payload).status||''}catch{}
     return `<div class="event-item"><span class="event-kind kind-${e.kind}">${e.kind.toUpperCase()}</span><span style="color:var(--text-dim)">${esc(e.task_id)}</span>${p?'<span style="color:var(--text)"> &mdash; '+esc(p)+'</span>':''}<div class="event-time">${fmt(e.created_at)}</div></div>`
   }).join('')
@@ -908,7 +911,7 @@ function renderStandup(){
 function renderChat(){
   const el=document.getElementById('chat-body'),c=current().comments||[];
   if(!c.length){el.innerHTML='<div class="empty-state">No messages</div>';return}
-  el.innerHTML=c.slice(-30).reverse().map(m=>`<div class="chat-msg"><span class="chat-badge">${badge(m.author)}</span><span class="chat-author">${esc(m.author)}</span><div class="chat-body">${esc(m.body)}</div><div class="chat-time">${fmt(m.created_at)}</div></div>`).join('')
+  el.innerHTML=c.slice(0, 30).map(m=>`<div class="chat-msg"><span class="chat-badge">${badge(m.author)}</span><span class="chat-author">${esc(m.author)}</span><div class="chat-body">${esc(m.body)}</div><div class="chat-time">${fmt(m.created_at)}</div></div>`).join('')
 }
 
 function showTask(id){

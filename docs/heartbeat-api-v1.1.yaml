@@ -1,0 +1,539 @@
+openapi: "3.1.0"
+info:
+  title: Agent Office — Agent Heartbeat API
+  version: "1.1.0"
+  description: >
+    Internal API for Hermes agent workers to report runtime state during task execution.
+    The heartbeat endpoint accepts optional rich fields for the agent inspector dashboard.
+    All fields beyond `taskId` and `command` are optional.
+
+servers:
+  - url: "http://localhost:{port}"
+    description: Local Agent Office server
+    variables:
+      port:
+        default: "3000"
+
+paths:
+  /api/agents/{profileId}/heartbeat:
+    post:
+      summary: Report agent heartbeat with runtime state
+      description: >
+        Called by agent workers during task execution to update their runtime state.
+        The endpoint updates `tasks.current_command`, `tasks.current_progress`, and
+        `tasks.last_heartbeat_at` for the task, and inserts a `task_events` row of
+        kind `heartbeat` with the full payload. WebSocket delta polling picks up the
+        new event and broadcasts the updated snapshot to connected inspector clients.
+
+        Required fields: `taskId`, `command`.
+        All other fields are optional and stored in the event payload for the
+        inspector dashboard to consume.
+      operationId: agentHeartbeat
+      parameters:
+        - name: profileId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Hermes profile identifier (e.g., "researcher", "api-dev")
+          examples:
+            dev:
+              value: "api-dev"
+            paper:
+              value: "paper-researcher"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - taskId
+                - command
+              properties:
+                taskId:
+                  type: string
+                  description: The kanban task ID the agent is working on (e.g., "t_327cf48f")
+                  example: "t_327cf48f"
+                command:
+                  type: string
+                  description: High-level action the agent is currently performing
+                  example: "read_file /root/agent-office/server/db.js"
+                progress:
+                  type: string
+                  description: Human-readable progress status
+                  example: "Step 3 of 5 — updating buildSnapshot()"
+                progressPct:
+                  type: integer
+                  minimum: 0
+                  maximum: 100
+                  description: Numeric completion percentage (0-100)
+                  example: 60
+                skill:
+                  type: string
+                  description: Name of the currently loaded skill
+                  example: "fastapi"
+                toolCall:
+                  type: string
+                  description: Name of the tool currently being invoked
+                  example: "read_file"
+                actionType:
+                  type: string
+                  description: Category of the current action (reading, writing, searching, executing, etc.)
+                  example: "reading"
+                terminalOutput:
+                  type: string
+                  maxLength: 500
+                  description: Last N lines of terminal output, truncated to 500 characters to avoid DB bloat
+                  example: "Last 3 lines of output..."
+                outputSnippet:
+                  type: string
+                  maxLength: 500
+                  description: Alias for terminalOutput. If both are provided, terminalOutput takes precedence.
+                  example: "Last 3 lines of output..."
+                errorState:
+                  type: string
+                  description: Transient error during the current turn (null if no error)
+                  example: "ECONNREFUSED — retrying with fallback provider"
+                  nullable: true
+                error:
+                  type: string
+                  description: Alias for errorState. If both are provided, errorState takes precedence.
+                  example: "ECONNREFUSED — retrying with fallback provider"
+                  nullable: true
+                fileEdited:
+                  type: string
+                  description: Absolute path of the file being edited
+                  example: "/root/agent-office/server/routes.js"
+                sessionDuration:
+                  type: integer
+                  description: Elapsed seconds since the current run started
+                  example: 420
+                model:
+                  type: string
+                  description: Currently active model (may differ from profile default via task override)
+                  example: "deepseek-v4-flash"
+                provider:
+                  type: string
+                  description: Currently active provider
+                  example: "opencode-go"
+                contextPct:
+                  type: integer
+                  minimum: 0
+                  maximum: 100
+                  description: Context window usage percentage
+                  example: 64
+                turnCount:
+                  type: integer
+                  description: Current turn number
+                  example: 12
+                maxTurns:
+                  type: integer
+                  description: Maximum turns for this session
+                  example: 150
+                subagentActive:
+                  type: boolean
+                  description: Whether subagents are currently running
+                  example: false
+                memoryUpdated:
+                  type: boolean
+                  description: Whether persistent memory was updated during this turn
+                  example: false
+
+            examples:
+              minimal:
+                summary: Minimal heartbeat (backward compatible)
+                value:
+                  taskId: "t_327cf48f"
+                  command: "read_file /root/agent-office/server/routes.js"
+              rich:
+                summary: Rich heartbeat with all optional fields
+                value:
+                  taskId: "t_cbb33be3"
+                  command: "web_search hermes agent inspector"
+                  progress: "3/7 completed"
+                  progressPct: 43
+                  skill: "web-search"
+                  toolCall: "web_search"
+                  actionType: "searching"
+                  terminalOutput: ""
+                  errorState: null
+                  fileEdited: null
+                  sessionDuration: 420
+                  model: "kimi-k2.5"
+                  provider: "opencode-go"
+                  contextPct: 64
+                  turnCount: 12
+                  maxTurns: 150
+                  subagentActive: false
+                  memoryUpdated: false
+              withError:
+                summary: Heartbeat with transient error
+                value:
+                  taskId: "t_db670924"
+                  command: "browser_navigate https://api.example.com"
+                  progress: "Retrying after error"
+                  progressPct: 25
+                  toolCall: "browser_navigate"
+                  actionType: "browsing"
+                  errorState: "ERR_CONNECTION_REFUSED — retrying (attempt 2/3)"
+
+      responses:
+        "200":
+          description: Heartbeat recorded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  taskId:
+                    type: string
+                    example: "t_327cf48f"
+                  teamId:
+                    type: string
+                    description: The team DB where the task was found
+                    example: "dev"
+        "400":
+          description: Missing required fields (taskId or command)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "taskId and command are required"
+        "404":
+          description: Task not found in any team database
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "Task not found"
+                taskId: "t_nonexistent"
+
+  /api/snapshot:
+    get:
+      summary: Get full snapshot for all teams
+      description: >
+        Returns the complete state for all configured teams, including profiles
+        enriched with config.yaml metadata and latest heartbeat payload fields.
+        Used by the WebSocket layer to push updates to connected inspector clients.
+      operationId: getSnapshot
+      responses:
+        "200":
+          description: Full snapshot for all teams
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SnapshotResponse"
+
+  /api/health:
+    get:
+      summary: Health check
+      operationId: healthCheck
+      responses:
+        "200":
+          description: Server is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  db:
+                    type: object
+                    description: Per-team DB connection status
+                  uptime:
+                    type: number
+                    description: Process uptime in seconds
+
+components:
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Human-readable error message
+        taskId:
+          type: string
+          description: ID of the task that caused the error (only on 404)
+
+    ProfileObject:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        model:
+          type: string
+          description: Effective model (task-level override takes precedence over profile default)
+        icon:
+          type: string
+        status:
+          type: string
+          enum: [running, blocked, idle]
+        currentTask:
+          type: string
+          nullable: true
+        currentTaskId:
+          type: string
+          nullable: true
+        currentCommand:
+          type: string
+          nullable: true
+        currentProgress:
+          type: string
+          nullable: true
+        lastActivity:
+          type: integer
+          nullable: true
+        # Config-enriched fields
+        provider:
+          type: string
+          nullable: true
+        activeToolsets:
+          type: array
+          items:
+            type: string
+        disabledToolsets:
+          type: array
+          items:
+            type: string
+        maxTurns:
+          type: integer
+          nullable: true
+        goalMode:
+          type: boolean
+        personality:
+          type: string
+          nullable: true
+        terminalBackend:
+          type: string
+          nullable: true
+        description:
+          type: string
+          nullable: true
+        memoryEnabled:
+          type: boolean
+          nullable: true
+        maxConcurrentChildren:
+          type: integer
+          nullable: true
+        maxSpawnDepth:
+          type: integer
+          nullable: true
+        reasoningEffort:
+          type: string
+          nullable: true
+        workspacePath:
+          type: string
+          nullable: true
+        # Heartbeat-derived fields
+        progressPct:
+          type: integer
+          nullable: true
+        currentSkill:
+          type: string
+          nullable: true
+        currentTool:
+          type: string
+          nullable: true
+        actionType:
+          type: string
+          nullable: true
+        contextPct:
+          type: integer
+          nullable: true
+        turnCount:
+          type: integer
+          nullable: true
+        sessionMaxTurns:
+          type: integer
+          nullable: true
+        errorState:
+          type: string
+          nullable: true
+        sessionDuration:
+          type: integer
+          nullable: true
+        subagentActive:
+          type: boolean
+          nullable: true
+        memoryUpdated:
+          type: boolean
+          nullable: true
+        lastHeartbeatAt:
+          type: integer
+          nullable: true
+
+    SnapshotResponse:
+      type: object
+      additionalProperties:
+        type: object
+        properties:
+          profiles:
+            type: array
+            items:
+              $ref: "#/components/schemas/ProfileObject"
+          tasks:
+            type: array
+            items:
+              $ref: "#/components/schemas/TaskObject"
+          events:
+            type: array
+            items:
+              $ref: "#/components/schemas/EventObject"
+          comments:
+            type: array
+            items:
+              $ref: "#/components/schemas/CommentObject"
+          runs:
+            type: array
+            items:
+              $ref: "#/components/schemas/RunObject"
+          links:
+            type: array
+            items:
+              $ref: "#/components/schemas/LinkObject"
+          standup:
+            $ref: "#/components/schemas/StandupObject"
+          serverTime:
+            type: integer
+
+    TaskObject:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        body:
+          type: string
+        assignee:
+          type: string
+          nullable: true
+        status:
+          type: string
+        priority:
+          type: integer
+        tenant:
+          type: string
+          nullable: true
+        created_at:
+          type: integer
+        started_at:
+          type: integer
+          nullable: true
+        completed_at:
+          type: integer
+          nullable: true
+        result:
+          type: string
+          nullable: true
+        current_command:
+          type: string
+          nullable: true
+        current_progress:
+          type: string
+          nullable: true
+
+    EventObject:
+      type: object
+      properties:
+        id:
+          type: integer
+        task_id:
+          type: string
+        kind:
+          type: string
+        payload:
+          type: string
+          description: JSON string — parse to get heartbeat fields
+        created_at:
+          type: integer
+
+    CommentObject:
+      type: object
+      properties:
+        id:
+          type: integer
+        task_id:
+          type: string
+        author:
+          type: string
+        body:
+          type: string
+        created_at:
+          type: integer
+
+    RunObject:
+      type: object
+      properties:
+        id:
+          type: integer
+        task_id:
+          type: string
+        profile:
+          type: string
+        status:
+          type: string
+        started_at:
+          type: integer
+        ended_at:
+          type: integer
+          nullable: true
+        outcome:
+          type: string
+          nullable: true
+        summary:
+          type: string
+          nullable: true
+        metadata:
+          type: string
+          nullable: true
+
+    LinkObject:
+      type: object
+      properties:
+        parent_id:
+          type: string
+        child_id:
+          type: string
+
+    StandupObject:
+      type: object
+      properties:
+        totalTasks:
+          type: integer
+        byStatus:
+          type: object
+        byProfile:
+          type: object
+        blockers:
+          type: array
+          items:
+            $ref: "#/components/schemas/TaskObject"
+
+  securitySchemes: {}
+
+security: []
+
+tags:
+  - name: Heartbeat
+    description: Agent runtime state reporting
+  - name: Snapshot
+    description: Read-only state queries for the inspector dashboard
+
+x-rate-limit:
+  description: No rate limiting — internal service, single client per agent profile.
+  maxPerSecond: null
+
+x-auth:
+  method: none — internal service, no authentication required.
+  note: The Agent Office server is intended to run locally/on trusted infrastructure. No auth tokens or API keys are required.

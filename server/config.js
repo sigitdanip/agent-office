@@ -33,6 +33,8 @@ const ICON_OVERRIDES = {
   'paper-reviewer': 'RV',
   'paper-visualizer': 'VIZ',
   'paper-writer': 'WR',
+  'paper-technical': 'PT',
+  'paper-lead': 'PL',
 };
 
 function discoverProfiles() {

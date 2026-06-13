@@ -43,6 +43,7 @@ db.connectAll();
 const app = express();
 const server = http.createServer(app);
 app.use(express.static(path.join(__dirname, '..', 'public')));
+app.use(express.json());
 app.use('/api', createRouter(db, config));
 
 const ws = new WebSocketManager(server, db, config);

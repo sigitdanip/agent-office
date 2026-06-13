@@ -534,7 +534,7 @@ function renderActivity(){
   const el=document.getElementById('activity-feed');
   const events=current().events||[];
   if(!events.length){el.innerHTML='<div class="empty-state">No activity</div>';return}
-  el.innerHTML=events.slice(-50).reverse().map(e=>{
+  el.innerHTML=events.slice(0, 50).map(e=>{
     let p='';try{p=JSON.parse(e.payload).message||JSON.parse(e.payload).status||''}catch{}
     return `<div class="event-item"><span class="event-kind kind-${e.kind}">${e.kind.toUpperCase()}</span><span style="color:var(--text-dim)">${esc(e.task_id)}</span>${p?'<span style="color:var(--text)"> &mdash; '+esc(p)+'</span>':''}<div class="event-time">${fmt(e.created_at)}</div></div>`
   }).join('')
@@ -555,7 +555,7 @@ function renderStandup(){
 function renderChat(){
   const el=document.getElementById('chat-body'),c=current().comments||[];
   if(!c.length){el.innerHTML='<div class="empty-state">No messages</div>';return}
-  el.innerHTML=c.slice(-30).reverse().map(m=>`<div class="chat-msg"><span class="chat-badge">${iconOf(m.author)}</span><span class="chat-author">${esc(m.author)}</span><div class="chat-body">${esc(m.body)}</div><div class="chat-time">${fmt(m.created_at)}</div></div>`).join('')
+  el.innerHTML=c.slice(0, 30).map(m=>`<div class="chat-msg"><span class="chat-badge">${iconOf(m.author)}</span><span class="chat-author">${esc(m.author)}</span><div class="chat-body">${esc(m.body)}</div><div class="chat-time">${fmt(m.created_at)}</div></div>`).join('')
 }
 
 function showTask(id){
