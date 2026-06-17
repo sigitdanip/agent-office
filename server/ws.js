@@ -1,4 +1,6 @@
 const { WebSocketServer } = require('ws');
+const { log } = require('./logger');
+const { metrics } = require('./metrics');
 
 class WebSocketManager {
   constructor(server, db, config) {
@@ -7,6 +9,10 @@ class WebSocketManager {
     this.wss = new WebSocketServer({ server });
     this.lastIds = {};
     this.pollTimer = null;
+    this._snapshotCache = null;     // cached full snapshot
+    this._snapshotCacheTime = 0;    // timestamp of last snapshot build
+    this._snapshotCacheTTL = 500;   // reuse cached snapshot for 500ms (debounce rapid polls)
+    this._lastBroadcastTime = 0;    // throttle broadcasts to 1 per second
 
     // Seed last IDs using SELECT MAX(id) — lighter than loading full snapshot
     for (const tid of Object.keys(config.TEAMS)) {
@@ -19,21 +25,34 @@ class WebSocketManager {
 
   _setupConnectionHandler() {
     this.wss.on('connection', (ws) => {
-      console.log('[agent-office] Client connected');
+      log.info('Client connected', { clientCount: this.wss.clients.size });
+      metrics.get('websocket_clients').set({}, this.wss.clients.size);
+      metrics.get('websocket_connections_total').inc();
+
       ws.on('error', (err) => {
-        console.error(`[agent-office] WebSocket error: ${err.message}`);
+        log.error('WebSocket error', { error: err.message });
       });
+
       try {
-        ws.send(JSON.stringify({ type: 'snapshot', data: this.db.buildAllSnapshots() }));
+        const snap = this.db.buildAllSnapshots();
+        this._snapshotCache = snap;
+        this._snapshotCacheTime = Date.now();
+        ws.send(JSON.stringify({ type: 'snapshot', data: snap }));
       } catch (e) {
-        console.error(`[agent-office] Failed to send snapshot: ${e.message}`);
+        log.error('Failed to send snapshot', { error: e.message });
       }
-      ws.on('close', () => console.log('[agent-office] Client disconnected'));
+
+      ws.on('close', () => {
+        log.info('Client disconnected', { clientCount: this.wss.clients.size });
+        metrics.get('websocket_clients').set({}, this.wss.clients.size);
+        metrics.get('websocket_disconnections_total').inc();
+      });
     });
   }
 
   start() {
     this.pollTimer = setInterval(() => this._poll(), this.config.POLL_INTERVAL);
+    log.info('Polling started', { interval_ms: this.config.POLL_INTERVAL });
   }
 
   stop() {
@@ -42,6 +61,7 @@ class WebSocketManager {
       this.pollTimer = null;
     }
     this.wss.close();
+    log.info('WebSocket server stopped');
   }
 
   _poll() {
@@ -54,10 +74,24 @@ class WebSocketManager {
         if (hasDelta) anyDelta = true;
       }
       if (anyDelta) {
-        this._broadcast({ type: 'snapshot', data: this.db.buildAllSnapshots() });
+        // Throttle: max 1 broadcast per second to avoid flooding on rapid heartbeats
+        const now = Date.now();
+        if (now - this._lastBroadcastTime < 1000) return;
+        this._lastBroadcastTime = now;
+
+        // Use cached snapshot if fresh (< TTL), otherwise rebuild
+        let snap;
+        if (this._snapshotCache && (now - this._snapshotCacheTime) < this._snapshotCacheTTL) {
+          snap = this._snapshotCache;
+        } else {
+          snap = this.db.buildAllSnapshots();
+          this._snapshotCache = snap;
+          this._snapshotCacheTime = now;
+        }
+        this._broadcast({ type: 'delta', data: snap });
       }
     } catch (e) {
-      console.error(`[agent-office] Poll cycle error: ${e.message}`);
+      log.error('Poll cycle error', { error: e.message });
     }
   }
 
@@ -79,7 +113,7 @@ class WebSocketManager {
         try {
           c.send(payload);
         } catch (e) {
-          console.error(`[agent-office] Broadcast send error: ${e.message}`);
+          log.error('Broadcast send error', { error: e.message });
         }
       }
     });

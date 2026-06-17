@@ -34,6 +34,17 @@ npm run dev
 
 Open `http://localhost:3000` in your browser. The frontend connects to the VPS backend via WebSocket — your kanban data flows live.
 
+## Documentation
+
+Full operational docs live in [`docs/`](./docs/):
+
+- [docs/architecture.md](./docs/architecture.md) — system topology, data flow, file layout
+- [docs/runbook.md](./docs/runbook.md) — deploy, monitor, troubleshoot, scale
+- [docs/endpoints.md](./docs/endpoints.md) — HTTP/WS endpoint reference
+- [docs/benchmarks.md](./docs/benchmarks.md) — performance targets and measured numbers
+- [docs/troubleshooting.md](./docs/troubleshooting.md) — common issues and diagnostics
+- [docs/heartbeat-api-v1.1.yaml](./docs/heartbeat-api-v1.1.yaml) — OpenAPI 3.1 spec for the heartbeat API
+
 ## What You See
 
 - **Team Roster** — all 12 specialist profiles with live status (idle/running/blocked)

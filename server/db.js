@@ -1,5 +1,9 @@
 const Database = require('better-sqlite3');
 const fs = require('fs');
+const { log } = require('./logger');
+const { metrics } = require('./metrics');
+
+const SLOW_QUERY_MS = 100;
 
 class DatabaseManager {
   constructor(config) {
@@ -11,13 +15,15 @@ class DatabaseManager {
     try {
       if (fs.existsSync(dbPath)) {
         this.dbs[teamId] = new Database(dbPath, { readonly: false, fileMustExist: true });
-        console.log(`[agent-office] [${teamId}] Connected to kanban DB: ${dbPath}`);
+        log.info('DB connected', { team: teamId, dbPath });
       } else {
-        console.warn(`[agent-office] [${teamId}] Kanban DB not found at ${dbPath}`);
+        log.warn('DB not found', { team: teamId, dbPath });
       }
     } catch (e) {
-      console.error(`[agent-office] [${teamId}] DB error: ${e.message}`);
+      log.error('DB connection error', { team: teamId, dbPath, error: e.message });
     }
+    // Update metrics gauge
+    metrics.get('db_connections').set({}, Object.keys(this.dbs).length);
   }
 
   connectAll() {
@@ -30,6 +36,7 @@ class DatabaseManager {
     if (this.dbs[teamId]) {
       try { this.dbs[teamId].close(); } catch (e) { /* ignore close errors */ }
       delete this.dbs[teamId];
+      metrics.get('db_connections').set({}, Object.keys(this.dbs).length);
     }
   }
 
@@ -42,10 +49,21 @@ class DatabaseManager {
   query(teamId, sql, params = []) {
     const db = this.dbs[teamId];
     if (!db) return [];
+    const start = performance.now();
     try {
-      return db.prepare(sql).all(...params);
+      const rows = db.prepare(sql).all(...params);
+      const duration = performance.now() - start;
+      metrics.get('db_queries_total').inc({ team: teamId, type: 'query' });
+      metrics.get('db_query_duration_ms').observe(duration);
+      if (duration > SLOW_QUERY_MS) {
+        metrics.get('slow_queries_total').inc({ team: teamId });
+        log.warn('Slow query detected', { team: teamId, duration_ms: Math.round(duration), sql: sql.slice(0, 200) });
+      }
+      return rows;
     } catch (e) {
-      console.error(`[agent-office] [${teamId}] Query error: ${e.message}`);
+      const duration = performance.now() - start;
+      metrics.get('db_queries_total').inc({ team: teamId, type: 'query' });
+      log.error('Query error', { team: teamId, error: e.message, duration_ms: Math.round(duration), sql: sql.slice(0, 200) });
       return [];
     }
   }
@@ -53,15 +71,28 @@ class DatabaseManager {
   run(teamId, sql, params = []) {
     const db = this.dbs[teamId];
     if (!db) return { changes: 0 };
+    const start = performance.now();
     try {
-      return db.prepare(sql).run(...params);
+      const result = db.prepare(sql).run(...params);
+      const duration = performance.now() - start;
+      metrics.get('db_queries_total').inc({ team: teamId, type: 'run' });
+      metrics.get('db_query_duration_ms').observe(duration);
+      if (duration > SLOW_QUERY_MS) {
+        metrics.get('slow_queries_total').inc({ team: teamId });
+        log.warn('Slow query detected', { team: teamId, duration_ms: Math.round(duration), sql: sql.slice(0, 200) });
+      }
+      return result;
     } catch (e) {
-      console.error(`[agent-office] [${teamId}] Run error: ${e.message}`);
+      const duration = performance.now() - start;
+      metrics.get('db_queries_total').inc({ team: teamId, type: 'run' });
+      log.error('Run error', { team: teamId, error: e.message, duration_ms: Math.round(duration), sql: sql.slice(0, 200) });
       return { changes: 0 };
     }
   }
 
   buildSnapshot(teamId) {
+    const start = performance.now();
+
     const team = this.config.TEAMS[teamId];
     if (!team) return null;
     const db = this.dbs[teamId];
@@ -69,24 +100,55 @@ class DatabaseManager {
 
     const tasks = this.query(teamId, 'SELECT id, title, body, assignee, status, priority, tenant, created_at, started_at, completed_at, result, current_command, current_progress, model_override, workspace_path, last_heartbeat_at FROM tasks ORDER BY created_at DESC LIMIT 200');
     const events = this.query(teamId, 'SELECT id, task_id, kind, payload, created_at FROM task_events ORDER BY id DESC LIMIT 100');
+    // Query heartbeats separately with a generous limit so rich data isn't lost
+    // when older heartbeats fall outside the general 100-event window.
+    const heartbeats = this.query(teamId, 'SELECT id, task_id, payload FROM task_events WHERE kind = \'heartbeat\' AND payload IS NOT NULL ORDER BY id DESC LIMIT 1000');
     const comments = this.query(teamId, 'SELECT id, task_id, author, body, created_at FROM task_comments ORDER BY id DESC LIMIT 50');
     const runs = this.query(teamId, 'SELECT id, task_id, profile, status, started_at, ended_at, outcome, summary, metadata FROM task_runs ORDER BY started_at DESC LIMIT 50');
     const links = this.query(teamId, 'SELECT parent_id, child_id FROM task_links');
 
-    // Build a map of taskId -> latest heartbeat payload for active tasks
+    // Pre-index: build Maps for O(1) lookup instead of O(n*m) linear scans
+    // taskByAssignee: assignee -> active task (running/blocked)
+    const taskByAssignee = new Map();
+    // runByProfile: profile -> most recent run
+    const runByProfile = new Map();
+    // heartbeatByTask: task_id -> merged heartbeat payload
     const heartbeatByTask = {};
-    for (const evt of events) {
-      if (evt.kind === 'heartbeat' && evt.payload) {
-        try {
-          const parsed = JSON.parse(evt.payload);
-          heartbeatByTask[evt.task_id] = Object.assign(parsed, heartbeatByTask[evt.task_id] || {});
-        } catch (e) { /* malformed payload, skip */ }
+
+    for (const t of tasks) {
+      if (t.status === 'running' || t.status === 'blocked') {
+        if (!taskByAssignee.has(t.assignee)) {
+          taskByAssignee.set(t.assignee, t);
+        }
       }
     }
 
+    for (const r of runs) {
+      if (!runByProfile.has(r.profile)) {
+        runByProfile.set(r.profile, r);
+      }
+    }
+
+    // Merge heartbeat payloads per task (newest-first: newer keys win, older fill gaps)
+    for (const hb of heartbeats) {
+      try {
+        const parsed = JSON.parse(hb.payload);
+        const acc = heartbeatByTask[hb.task_id];
+        if (!acc) {
+          heartbeatByTask[hb.task_id] = parsed;
+        } else {
+          for (const key of Object.keys(parsed)) {
+            if (!(key in acc)) {
+              acc[key] = parsed[key];
+            }
+          }
+        }
+      } catch (e) { /* malformed payload, skip */ }
+    }
+
     const profiles = team.profiles.map(p => {
-      const activeTask = tasks.find(t => t.assignee === p.id && (t.status === 'running' || t.status === 'blocked'));
-      const lastRun = runs.find(r => r.profile === p.id);
+      const activeTask = taskByAssignee.get(p.id) || null;
+      const lastRun = runByProfile.get(p.id) || null;
       const hb = activeTask ? heartbeatByTask[activeTask.id] : null;
 
       // Merge config.yaml metadata for this profile
@@ -155,6 +217,10 @@ class DatabaseManager {
       }
     });
 
+    const duration = performance.now() - start;
+    metrics.get('snapshot_build_duration_ms').observe(duration);
+    metrics.get('snapshot_builds_total').inc();
+
     return {
       profiles, tasks, events, comments, runs, links,
       standup: {
@@ -182,7 +248,7 @@ class DatabaseManager {
       const maxComment = db.prepare('SELECT MAX(id) as maxId FROM task_comments').get();
       return { eventId: maxEvent.maxId || 0, commentId: maxComment.maxId || 0 };
     } catch (e) {
-      console.error(`[agent-office] [${teamId}] getMaxIds error: ${e.message}`);
+      log.error('getMaxIds error', { team: teamId, error: e.message });
       return { eventId: 0, commentId: 0 };
     }
   }

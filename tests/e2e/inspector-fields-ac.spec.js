@@ -192,8 +192,8 @@ test.describe('Inspector Field Reliability — AC Validation', () => {
     fileVal = await getInspectorKV(page, 'File');
 
     // AC5: Values should persist, not flicker to '--'
-    // NOTE: This may fail if the empty heartbeat overwrites snapshot profile data
-    // AND the rich heartbeat falls outside event window. This is the known bug.
+    // The snapshot now queries heartbeats separately (LIMIT 1000) and merges
+    // newest-first with older keys filling gaps, so rich data survives.
     if (skillVal === '--' || toolVal === '--' || fileVal === '--') {
       console.log('AC5 FLICKER DETECTED: Values flickered to "--" after empty heartbeat');
       console.log(`  skill: "${skillVal}", tool: "${toolVal}", file: "${fileVal}"`);

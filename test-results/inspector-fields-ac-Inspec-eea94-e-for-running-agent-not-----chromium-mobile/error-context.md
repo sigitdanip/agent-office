@@ -6,15 +6,15 @@
 
 # Test info
 
-- Name: inspector-fields-ac.spec.js >> Inspector Field Reliability — AC Validation >> AC5: Values persist across heartbeat ticks (no flickering between rich and empty)
-- Location: tests/e2e/inspector-fields-ac.spec.js:147:7
+- Name: inspector-fields-ac.spec.js >> Inspector Field Reliability — AC Validation >> AC1: Skill field shows skill name for running agent (not "--")
+- Location: tests/e2e/inspector-fields-ac.spec.js:64:7
 
 # Error details
 
 ```
 Error: expect(received).toBe(expected) // Object.is equality
 
-Expected: "ac5-persistence-skill"
+Expected: "accelint-ts-testing"
 Received: "cypress-playwright-setup"
 ```
 
@@ -140,19 +140,19 @@ Received: "cypress-playwright-setup"
         - generic [ref=e117]:
           - generic [ref=e118]:
             - generic [ref=e119]: Command
-            - generic [ref=e120]: process
+            - generic [ref=e120]: WebSocket real-time test 1781366163.2977622
           - generic [ref=e122]:
             - generic [ref=e123]: Progress
-            - generic [ref=e124]: "tool completed: process (60.0s)"
+            - generic [ref=e124]: "starting API call #1"
           - generic [ref=e125]:
             - generic [ref=e126]: Tool
-            - generic [ref=e127]: process
+            - generic [ref=e127]: terminal
           - generic [ref=e128]:
             - generic [ref=e129]: Skill
             - generic [ref=e130]: cypress-playwright-setup
           - generic [ref=e131]:
             - generic [ref=e132]: File
-            - generic [ref=e133]: /tmp/qa_websocket.py
+            - generic [ref=e133]: /tmp/qa_validation.py
           - generic [ref=e134]:
             - generic [ref=e135]: Duration
             - generic [ref=e136]: 0m 1s
@@ -165,8 +165,8 @@ Received: "cypress-playwright-setup"
       - generic [ref=e143]:
         - generic [ref=e144]: Terminal Output
         - generic [ref=e146]:
-          - generic [ref=e147]: "10:57 PMheartbeat #1856"
-          - generic [ref=e148]: 10:56 PM$ WebSocket real-time test 1781366163.2977622
+          - generic [ref=e147]: 10:56 PM$ WebSocket real-time test 1781366163.2977622
+          - generic [ref=e148]: 10:55 PM$ perf-test
           - generic [ref=e149]: 10:55 PM$ perf-test
           - generic [ref=e150]: 10:55 PM$ perf-test
           - generic [ref=e151]: 10:55 PM$ perf-test
@@ -186,56 +186,132 @@ Received: "cypress-playwright-setup"
           - generic [ref=e165]: 10:55 PM$ perf-test
           - generic [ref=e166]: 10:55 PM$ perf-test
           - generic [ref=e167]: 10:55 PM$ perf-test
-          - generic [ref=e168]: 10:55 PM$ perf-test
-          - generic [ref=e169]: 10:55 PM$ terminal [receiving stream response] Background process started
-          - generic [ref=e170]: "10:55 PMheartbeat #1803"
-          - generic [ref=e171]: 10:55 PM$ echo alias-test [Testing aliases] Terminal output via alias Test error via alias
-          - generic [ref=e172]: 10:55 PM$ terminal pytest --coverage [Running QA validation tests] PASS tests pass FAIL one test One test failing
-          - generic [ref=e173]: 10:55 PM$ QA validation heartbeat test
-          - generic [ref=e174]: 10:54 PM$ receiving stream response [receiving stream response] 813148 RUNNING
-          - generic [ref=e175]: "10:54 PMheartbeat #1778"
-          - generic [ref=e176]: "10:53 PM$ starting API call #1 [starting API call #1]"
+          - generic [ref=e168]: 10:55 PM$ terminal [receiving stream response] Background process started
+          - generic [ref=e169]: "10:55 PMheartbeat #1803"
+          - generic [ref=e170]: 10:55 PM$ echo alias-test [Testing aliases] Terminal output via alias Test error via alias
+          - generic [ref=e171]: 10:55 PM$ terminal pytest --coverage [Running QA validation tests] PASS tests pass FAIL one test One test failing
+          - generic [ref=e172]: 10:55 PM$ QA validation heartbeat test
+          - generic [ref=e173]: 10:54 PM$ receiving stream response [receiving stream response] 813148 RUNNING
+          - generic [ref=e174]: "10:54 PMheartbeat #1778"
+          - generic [ref=e175]: "10:53 PM$ starting API call #1 [starting API call #1]"
+          - generic [ref=e176]: "10:53 PMheartbeat #1760"
       - generic [ref=e177]:
         - generic [ref=e178]: Event Log (Task _06_2026)
-        - generic [ref=e180]: No events
-      - generic [ref=e181]:
-        - generic [ref=e182]: Run History
-        - generic [ref=e183]:
-          - generic [ref=e184]:
+        - generic [ref=e179]:
+          - generic [ref=e180]:
+            - text: CLAIMED
+            - generic [ref=e181]: 10:53 PM
+          - generic [ref=e182]:
+            - text: SPAWNED
+            - generic [ref=e183]: 10:53 PM
+      - generic [ref=e184]:
+        - generic [ref=e185]: Run History
+        - generic [ref=e186]:
+          - generic [ref=e187]:
             - text: RUNNINGt_dev_qa_agento_sprint_06_2026
-            - generic [ref=e185]: 10:53 PM
-          - generic [ref=e186]:
+            - generic [ref=e188]: 10:53 PM
+          - generic [ref=e189]:
             - text: "BLOCKEDreview-required: 6/7 ACs PASS — paper team kanban migration validated. AC4 block"
-            - generic [ref=e187]: 12:05 PM
-          - generic [ref=e188]:
+            - generic [ref=e190]: 12:05 PM
+          - generic [ref=e191]:
             - text: "BLOCKEDreview-required: Inspector field validation complete. AC1-3 (skill/tool/file sho"
-            - generic [ref=e189]: 08:56 PM
-          - generic [ref=e190]:
+            - generic [ref=e192]: 08:56 PM
+          - generic [ref=e193]:
             - text: CRASHEDt_887d317b
-            - generic [ref=e191]: 08:00 PM
-          - generic [ref=e192]:
+            - generic [ref=e194]: 08:00 PM
+          - generic [ref=e195]:
             - text: "BLOCKEDreview-required: 24/28 E2E tests pass. Bridge data flow verified end-to-end. 4 i"
-            - generic [ref=e193]: 07:39 PM
-          - generic [ref=e194]:
+            - generic [ref=e196]: 07:39 PM
+          - generic [ref=e197]:
             - text: "BLOCKEDreview-required: Agent inspector validated — 52/52 tests pass (0 failures, 24 pr"
-            - generic [ref=e195]: 05:08 PM
-          - generic [ref=e196]:
+            - generic [ref=e198]: 05:08 PM
+          - generic [ref=e199]:
             - text: "BLOCKEDreview-required: Agent inspector validated — 14/17 tests pass (11 desktop + 3 mo"
-            - generic [ref=e197]: 04:33 PM
-          - generic [ref=e198]:
+            - generic [ref=e200]: 04:33 PM
+          - generic [ref=e201]:
             - text: "BLOCKEDreview-required: Agents view UI missing from served HTML — all 10 acceptance cri"
-            - generic [ref=e199]: 03:12 PM
-          - generic [ref=e200]:
+            - generic [ref=e202]: 03:12 PM
+          - generic [ref=e203]:
             - text: CRASHEDt_8cc91d9e
-            - generic [ref=e201]: 02:40 PM
-          - generic [ref=e202]:
+            - generic [ref=e204]: 02:40 PM
+          - generic [ref=e205]:
             - text: COMPLETEDFull E2E test suite built. 7 spec files covering board, sprints, charts, CI, tea
-            - generic [ref=e203]: 08:10 PM
+            - generic [ref=e206]: 08:10 PM
 ```
 
 # Test source
 
 ```ts
+  1   | import { test, expect } from '@playwright/test';
+  2   | 
+  3   | const BASE = 'http://localhost:3000';
+  4   | 
+  5   | async function waitForConnected(page) {
+  6   |   await page.waitForFunction(() => {
+  7   |     const el = document.getElementById('conn-status');
+  8   |     return el && el.textContent === 'Connected';
+  9   |   }, { timeout: 10000 });
+  10  | }
+  11  | 
+  12  | async function sendHeartbeat(profileId, fields = {}) {
+  13  |   const res = await fetch(`${BASE}/api/agents/${profileId}/heartbeat`, {
+  14  |     method: 'POST',
+  15  |     headers: { 'Content-Type': 'application/json' },
+  16  |     body: JSON.stringify(fields),
+  17  |   });
+  18  |   return res.json();
+  19  | }
+  20  | 
+  21  | async function getInspectorKV(page, label) {
+  22  |   const body = page.locator('#inspector-body');
+  23  |   const kvDivs = body.locator('.insp-kv');
+  24  |   const count = await kvDivs.count();
+  25  |   for (let i = 0; i < count; i++) {
+  26  |     const div = kvDivs.nth(i);
+  27  |     const labelText = await div.locator('.insp-kv-label').textContent();
+  28  |     if (labelText && labelText.trim() === label) {
+  29  |       return div.locator('.insp-kv-value').textContent();
+  30  |     }
+  31  |   }
+  32  |   return null;
+  33  | }
+  34  | 
+  35  | async function openInspectorForProfile(page, profileId) {
+  36  |   const rows = page.locator('.profile-row');
+  37  |   const count = await rows.count();
+  38  |   for (let i = 0; i < count; i++) {
+  39  |     const row = rows.nth(i);
+  40  |     const pid = await row.getAttribute('data-profile-id');
+  41  |     if (pid === profileId) {
+  42  |       await row.click();
+  43  |       await page.waitForTimeout(300);
+  44  |       return true;
+  45  |     }
+  46  |   }
+  47  |   return false;
+  48  | }
+  49  | 
+  50  | test.describe('Inspector Field Reliability — AC Validation', () => {
+  51  | 
+  52  |   test.beforeEach(async ({ page }) => {
+  53  |     await page.goto(BASE);
+  54  |     await waitForConnected(page);
+  55  | 
+  56  |     // Switch to Team view on mobile
+  57  |     const viewport = page.viewportSize();
+  58  |     if (viewport && viewport.width < 768) {
+  59  |       await page.locator('.mobile-nav-item[data-mview="team"]').click();
+  60  |       await page.waitForTimeout(300);
+  61  |     }
+  62  |   });
+  63  | 
+  64  |   test('AC1: Skill field shows skill name for running agent (not "--")', async ({ page }) => {
+  65  |     // Send a unique rich heartbeat for this test
+  66  |     await sendHeartbeat('qa-engineer', {
+  67  |       taskId: 't_887d317b',
+  68  |       command: 'terminal pytest --ac1',
+  69  |       progress: 'Running AC1 validation',
+  70  |       skill: 'accelint-ts-testing',
   71  |       toolCall: 'browser_navigate',
   72  |       fileEdited: '/tmp/ac1-test.js',
   73  |       terminalOutput: 'AC1 test output',
@@ -248,7 +324,8 @@ Received: "cypress-playwright-setup"
   80  |     const skillValue = await getInspectorKV(page, 'Skill');
   81  |     expect(skillValue).toBeTruthy();
   82  |     expect(skillValue).not.toBe('--');
-  83  |     expect(skillValue).toBe('accelint-ts-testing');
+> 83  |     expect(skillValue).toBe('accelint-ts-testing');
+      |                        ^ Error: expect(received).toBe(expected) // Object.is equality
   84  |   });
   85  | 
   86  |   test('AC2: Tool field shows tool name for running agent (not "--" and not misleading)', async ({ page }) => {
@@ -336,8 +413,7 @@ Received: "cypress-playwright-setup"
   168 |     let skillVal = await getInspectorKV(page, 'Skill');
   169 |     let toolVal = await getInspectorKV(page, 'Tool');
   170 |     let fileVal = await getInspectorKV(page, 'File');
-> 171 |     expect(skillVal).toBe(uniqueSkill);
-      |                      ^ Error: expect(received).toBe(expected) // Object.is equality
+  171 |     expect(skillVal).toBe(uniqueSkill);
   172 |     expect(toolVal).toBe(uniqueTool);
   173 |     expect(fileVal).toBe(uniqueFile);
   174 | 
@@ -350,92 +426,4 @@ Received: "cypress-playwright-setup"
   181 |     await page.waitForTimeout(3000);
   182 | 
   183 |     // Re-check inspector values — should NOT flicker to '--'
-  184 |     // We need to re-open or refresh to see if the snapshot update caused flicker
-  185 |     // Close and re-open inspector
-  186 |     await page.locator('#inspector-close-btn').click();
-  187 |     await page.waitForTimeout(300);
-  188 |     await openInspectorForProfile(page, 'qa-engineer');
-  189 | 
-  190 |     skillVal = await getInspectorKV(page, 'Skill');
-  191 |     toolVal = await getInspectorKV(page, 'Tool');
-  192 |     fileVal = await getInspectorKV(page, 'File');
-  193 | 
-  194 |     // AC5: Values should persist, not flicker to '--'
-  195 |     // NOTE: This may fail if the empty heartbeat overwrites snapshot profile data
-  196 |     // AND the rich heartbeat falls outside event window. This is the known bug.
-  197 |     if (skillVal === '--' || toolVal === '--' || fileVal === '--') {
-  198 |       console.log('AC5 FLICKER DETECTED: Values flickered to "--" after empty heartbeat');
-  199 |       console.log(`  skill: "${skillVal}", tool: "${toolVal}", file: "${fileVal}"`);
-  200 |     }
-  201 |     // Soft assertion — document the behavior
-  202 |     expect(skillVal, 'Skill should persist after empty heartbeat').not.toBe('--');
-  203 |     expect(toolVal, 'Tool should persist after empty heartbeat').not.toBe('--');
-  204 |     expect(fileVal, 'File should persist after empty heartbeat').not.toBe('--');
-  205 |   });
-  206 | 
-  207 |   test('AC6: Idle agents show "--" for all inspector fields (no regression)', async ({ page }) => {
-  208 |     // Find an idle profile (not qa-engineer which is running)
-  209 |     const rows = page.locator('.profile-row');
-  210 |     const count = await rows.count();
-  211 |     let idleProfileId = null;
-  212 |     for (let i = 0; i < count; i++) {
-  213 |       const row = rows.nth(i);
-  214 |       const statusEl = row.locator('.profile-status');
-  215 |       const status = await statusEl.textContent();
-  216 |       if (status === 'Idle') {
-  217 |         idleProfileId = await row.getAttribute('data-profile-id');
-  218 |         await row.click();
-  219 |         await page.waitForTimeout(500);
-  220 |         break;
-  221 |       }
-  222 |     }
-  223 | 
-  224 |     if (!idleProfileId) {
-  225 |       test.skip(true, 'No idle profiles found');
-  226 |       return;
-  227 |     }
-  228 | 
-  229 |     // Check that skill, tool, file fields show '--' for idle agent
-  230 |     const skillValue = await getInspectorKV(page, 'Skill');
-  231 |     const toolValue = await getInspectorKV(page, 'Tool');
-  232 |     const fileValue = await getInspectorKV(page, 'File');
-  233 | 
-  234 |     expect(skillValue).toBe('--');
-  235 |     expect(toolValue).toBe('--');
-  236 |     expect(fileValue).toBe('--');
-  237 |   });
-  238 | 
-  239 |   test('AC7: Inspector works for both Dev and Paper teams', async ({ page }) => {
-  240 |     // Dev team — open inspector for running agent
-  241 |     await openInspectorForProfile(page, 'qa-engineer');
-  242 |     await expect(page.locator('#inspector-panel')).toHaveClass(/open/);
-  243 | 
-  244 |     // Check skill field shows data on dev
-  245 |     const devSkill = await getInspectorKV(page, 'Skill');
-  246 |     expect(devSkill).toBeTruthy();
-  247 |     expect(devSkill).not.toBe('--');
-  248 | 
-  249 |     // Close inspector
-  250 |     await page.locator('#inspector-close-btn').click();
-  251 |     await page.waitForTimeout(200);
-  252 | 
-  253 |     // Switch to Paper team
-  254 |     await page.locator('.team-tab[data-team="paper"]').click();
-  255 |     await page.waitForTimeout(500);
-  256 | 
-  257 |     // Click a paper profile
-  258 |     const paperRows = page.locator('#roster-list .profile-row');
-  259 |     const paperCount = await paperRows.count();
-  260 |     if (paperCount > 0) {
-  261 |       await paperRows.first().click();
-  262 |       await page.waitForTimeout(300);
-  263 |       await expect(page.locator('#inspector-panel')).toHaveClass(/open/);
-  264 | 
-  265 |       // Paper profile should show header
-  266 |       const name = page.locator('#inspector-name');
-  267 |       await expect(name).toBeVisible();
-  268 |       expect((await name.textContent()).length).toBeGreaterThan(0);
-  269 |     }
-  270 |   });
-  271 | 
 ```

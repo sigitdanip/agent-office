@@ -1,19 +1,64 @@
 const express = require('express');
+const { metrics } = require('./metrics');
+const { log } = require('./logger');
 
 function createRouter(db, config) {
   const router = express.Router();
 
   router.get('/snapshot', (req, res) => {
+    res.set('Cache-Control', 'no-cache'); // always revalidate
     res.json(db.buildAllSnapshots());
   });
 
   router.get('/teams', (req, res) => {
+    res.set('Cache-Control', 'public, max-age=300'); // 5 min (teams rarely change)
     const list = Object.values(config.TEAMS).map(t => ({ id: t.id, name: t.name }));
     res.json(list);
   });
 
   router.get('/health', (req, res) => {
-    res.json({ ok: true, db: db.getDbStatus(), uptime: process.uptime() });
+    res.set('Cache-Control', 'no-cache'); // always validate but allow 304
+    const dbStatus = db.getDbStatus();
+    const mem = process.memoryUsage();
+    const uptime = process.uptime();
+
+    // Check if DBs are healthy (connected and responsive)
+    const dbHealth = {};
+    for (const [tid, connected] of Object.entries(dbStatus)) {
+      if (connected) {
+        try {
+          // Quick ping query to verify DB is responsive
+          db.query(tid, 'SELECT 1');
+          dbHealth[tid] = { connected: true, responsive: true };
+        } catch (e) {
+          dbHealth[tid] = { connected: true, responsive: false, error: e.message };
+        }
+      } else {
+        dbHealth[tid] = { connected: false, responsive: false };
+      }
+    }
+
+    const allHealthy = Object.values(dbHealth).every(h => h.connected && h.responsive);
+
+    res.json({
+      status: allHealthy ? 'healthy' : 'degraded',
+      uptime: Math.round(uptime),
+      uptime_human: _formatUptime(uptime),
+      db: dbHealth,
+      memory: {
+        rss_mb: Math.round(mem.rss / 1024 / 1024),
+        heap_total_mb: Math.round(mem.heapTotal / 1024 / 1024),
+        heap_used_mb: Math.round(mem.heapUsed / 1024 / 1024),
+        external_mb: Math.round(mem.external / 1024 / 1024),
+      },
+      node_version: process.version,
+      pid: process.pid,
+    });
+  });
+
+  router.get('/metrics', (req, res) => {
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.send(metrics.render());
   });
 
   router.post('/agents/:profileId/heartbeat', (req, res) => {
@@ -120,6 +165,19 @@ function createRouter(db, config) {
   });
 
   return router;
+}
+
+function _formatUptime(seconds) {
+  const d = Math.floor(seconds / 86400);
+  const h = Math.floor((seconds % 86400) / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = Math.floor(seconds % 60);
+  const parts = [];
+  if (d > 0) parts.push(`${d}d`);
+  if (h > 0) parts.push(`${h}h`);
+  if (m > 0) parts.push(`${m}m`);
+  parts.push(`${s}s`);
+  return parts.join(' ');
 }
 
 module.exports = { createRouter };

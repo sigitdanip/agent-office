@@ -66,7 +66,8 @@ function renderKanban(){
   const el=document.getElementById('kanban-board'),ce=document.getElementById('task-count');
   const tasks=current().tasks||[];ce.textContent=tasks.length+' tasks';
   el.innerHTML=COLUMNS.map(col=>{
-    const items=tasks.filter(t=>t.status===col).sort((a,b)=>(b.priority||0)-(a.priority||0));
+    // done: most recently completed first. other columns: priority desc.
+    const items=tasks.filter(t=>t.status===col).sort((a,b)=>col==='done'?(b.completed_at||b.created_at||0)-(a.completed_at||a.created_at||0):(b.priority||0)-(a.priority||0));
     return `<div class="kanban-col"><div class="kanban-col-header"><span>${COLS[col]}</span><span class="kanban-col-count">${items.length}</span></div>
       <div class="kanban-col-body">
       ${items.slice(0,50).map(t=>`<div class="task-card" data-task-id="${t.id}">

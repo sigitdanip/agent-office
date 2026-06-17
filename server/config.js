@@ -7,7 +7,7 @@ const PORT = process.env.PORT || 3000;
 const REMOTE_BACKEND = process.env.REMOTE_BACKEND || null;
 const POLL_INTERVAL = parseInt(process.env.POLL_INTERVAL || '2000', 10);
 const PROFILES_DIR = process.env.HERMES_PROFILES_DIR || '/root/.hermes/profiles/';
-const METADATA_CACHE_TTL = 60000; // 60 seconds
+const METADATA_CACHE_TTL = parseInt(process.env.METADATA_CACHE_TTL || '300000', 10); // 5 min (configs rarely change, was 60s)
 
 // Overrides for names/icons that auto-derivation can't get right
 const NAME_OVERRIDES = {
